@@ -1,7 +1,7 @@
 #!/usr/bin/make -f
 
-VERSION ?= $(shell cat engine/VERSION)
-BUNDLE_VERSION = $(shell cat engine/VERSION)
+VERSION := $(shell cat VERSION)
+
 SYSTEMD_VERSION := $(shell dpkg-query -W -f='$${Version}\n' systemd | cut -d- -f1)
 SYSTEMD_GT_227 := $(shell [ '$(SYSTEMD_VERSION)' ] && [ '$(SYSTEMD_VERSION)' -gt 227 ] && echo true )
 
@@ -15,26 +15,36 @@ override_dh_gencontrol:
 	dh_gencontrol
 
 override_dh_auto_build:
-	cd engine && ./hack/make.sh dynbinary
-	LDFLAGS='' make -C cli VERSION=$(VERSION) GITCOMMIT=$(DOCKER_GITCOMMIT) dynbinary manpages
+	cd runc && make BUILDTAGS='seccomp apparmor selinux'
+	cd containerd && make
+	# TODO tini!!
+	# TODO docker-proxy
+	LDFLAGS='' make -C components/cli VERSION='$(VERSION)' GITCOMMIT='$(VERSION)' dynbinary manpages
+	cd components/engine && ./hack/make.sh dynbinary
 
 override_dh_auto_test:
-	./engine/bundles/$(BUNDLE_VERSION)/dynbinary-daemon/dockerd -v
+	# runc
+	./runc/runc -v
+	# containerd
+	./containerd/bin/containerd -v
+	./containerd/bin/ctr -v
+	# TODO tini
+	# engine
+	./components/engine/bundles/latest/dynbinary-daemon/dockerd -v
+	# cli
+	./components/cli/build/docker -v
 
 override_dh_strip:
 	# Go has lots of problems with stripping, so just don't
 
 override_dh_auto_install:
 	mkdir -p debian/docker-tianon/usr/bin
-	cp -aTL cli/build/docker debian/docker-tianon/usr/bin/docker
-	cp -aT "$$(readlink -f engine/bundles/$(BUNDLE_VERSION)/dynbinary-daemon/dockerd)" debian/docker-tianon/usr/bin/dockerd
-	cp -aT /usr/local/bin/docker-proxy debian/docker-tianon/usr/bin/docker-proxy
-	cp -aT /usr/local/bin/docker-containerd debian/docker-tianon/usr/bin/docker-containerd
-	cp -aT /usr/local/bin/docker-containerd-shim debian/docker-tianon/usr/bin/docker-containerd-shim
-	cp -aT /usr/local/bin/docker-containerd-ctr debian/docker-tianon/usr/bin/docker-containerd-ctr
-	cp -aT /usr/local/bin/docker-runc debian/docker-tianon/usr/bin/docker-runc
-	cp -aT /usr/local/bin/docker-init debian/docker-tianon/usr/bin/docker-init
-	mkdir -p debian/docker-tianon/usr/lib/docker
+	cp -aTL runc/runc debian/docker-tianon/usr/bin/docker-runc
+	# TODO containerd
+	# TODO tini
+	# TODO docker-proxy
+	cp -aTL components/cli/build/docker debian/docker-tianon/usr/bin/docker
+	cp -aTL components/engine/bundles/latest/dynbinary-daemon/dockerd debian/docker-tianon/usr/bin/dockerd
 
 override_dh_installinit:
 	# use "docker" as our service name, not "docker-tianon"
