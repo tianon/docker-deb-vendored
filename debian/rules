@@ -5,22 +5,68 @@ VERSION := $(shell cat VERSION)
 SYSTEMD_VERSION := $(shell dpkg-query -W -f='$${Version}\n' systemd | cut -d- -f1)
 SYSTEMD_GT_227 := $(shell [ '$(SYSTEMD_VERSION)' ] && [ '$(SYSTEMD_VERSION)' -gt 227 ] && echo true )
 
+# temporary build path (see http://golang.org/doc/code.html#GOPATH)
+OUR_GOPATH := $(CURDIR)/.gopath
+export GOPATH := $(OUR_GOPATH)
+
 # prefer Go 1.8 explicitly if it's available (golang-1.8-go)
 export PATH := /usr/lib/go-1.8/bin:$(PATH)
 # TODO build Go from source instead
+
+override_dh_auto_clean:
+	@# stop debhelper from doing "make clean"
 
 override_dh_gencontrol:
 	# if we're on Ubuntu, we need to Recommends: apparmor
 	echo 'apparmor:Recommends=$(shell dpkg-vendor --is Ubuntu && echo apparmor)' >> debian/docker-tianon.substvars
 	dh_gencontrol
 
+override_dh_auto_configure:
+	# set up GOPATH symlink farm
+	# runc
+	mkdir -p '$(OUR_GOPATH)/src/github.com/opencontainers'
+	ln -sfT '$(CURDIR)/runc' '$(OUR_GOPATH)/src/github.com/opencontainers/runc'
+	# containerd
+	mkdir -p '$(OUR_GOPATH)/src/github.com/containerd'
+	ln -sfT '$(CURDIR)/containerd' '$(OUR_GOPATH)/src/github.com/containerd/containerd'
+	# cli
+	mkdir -p '$(OUR_GOPATH)/src/github.com/docker'
+	ln -sfT '$(CURDIR)/components/cli' '$(OUR_GOPATH)/src/github.com/docker/cli'
+	# engine
+	mkdir -p '$(OUR_GOPATH)/src/github.com/docker'
+	ln -sfT '$(CURDIR)/components/engine' '$(OUR_GOPATH)/src/github.com/docker/docker'
+
+# https://github.com/docker/docker-ce/blob/v17.06.0-ce-rc5/components/cli/scripts/docs/generate-man.sh
+# (this is a rough approximation of, minus "go get")
+_build-manpages:
+	go build -o debian/tmp/gen-manpages github.com/docker/cli/man
+	cd components/cli \
+		&& mkdir -p man/man1 \
+		&& '$(CURDIR)/debian/tmp/gen-manpages' \
+			--root . --target ./man/man1 \
+		&& ./man/md2man-all.sh -q
+
 override_dh_auto_build:
-	cd runc && make BUILDTAGS='seccomp apparmor selinux'
-	cd containerd && make
+	# runc
+	cd '$(OUR_GOPATH)/src/github.com/opencontainers/runc' \
+		&& make \
+			BUILDTAGS='seccomp apparmor selinux' \
+			COMMIT='docker-$(VERSION)'
+	# containerd
+	LDFLAGS='' make -C containerd \
+		GIT_COMMIT='docker-$(VERSION)'
 	# TODO tini!!
 	# TODO docker-proxy
-	LDFLAGS='' make -C components/cli VERSION='$(VERSION)' GITCOMMIT='$(VERSION)' dynbinary manpages
-	cd components/engine && ./hack/make.sh dynbinary
+	# cli
+	LDFLAGS='' make -C components/cli \
+			VERSION='$(VERSION)' \
+			GITCOMMIT='v$(VERSION)' \
+			dynbinary
+	$(MAKE) -f debian/rules _build-manpages
+	# engine
+	cd components/engine \
+		&& DOCKER_GITCOMMIT='v$(VERSION)' \
+			./hack/make.sh dynbinary
 
 override_dh_auto_test:
 	# runc
@@ -29,21 +75,27 @@ override_dh_auto_test:
 	./containerd/bin/containerd -v
 	./containerd/bin/ctr -v
 	# TODO tini
-	# engine
-	./components/engine/bundles/latest/dynbinary-daemon/dockerd -v
 	# cli
 	./components/cli/build/docker -v
+	# engine
+	./components/engine/bundles/latest/dynbinary-daemon/dockerd -v
 
 override_dh_strip:
 	# Go has lots of problems with stripping, so just don't
 
 override_dh_auto_install:
 	mkdir -p debian/docker-tianon/usr/bin
+	# runc
 	cp -aTL runc/runc debian/docker-tianon/usr/bin/docker-runc
-	# TODO containerd
+	# containerd
+	cp -aTL containerd/bin/containerd debian/docker-tianon/usr/bin/docker-containerd
+	cp -aTL containerd/bin/containerd-shim debian/docker-tianon/usr/bin/docker-containerd-shim
+	cp -aTL containerd/bin/ctr debian/docker-tianon/usr/bin/docker-containerd-ctr
 	# TODO tini
 	# TODO docker-proxy
+	# cli
 	cp -aTL components/cli/build/docker debian/docker-tianon/usr/bin/docker
+	# engine
 	cp -aTL components/engine/bundles/latest/dynbinary-daemon/dockerd debian/docker-tianon/usr/bin/dockerd
 
 override_dh_installinit:

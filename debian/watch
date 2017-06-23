@@ -23,4 +23,8 @@ filenamemangle=s/.+\/docker-(\d\S*)\.tar\.gz/docker-tianon_$1.orig-containerd.ta
   https://uscan.tianon.xyz/github.com/tianon/docker-containerd-tags \
   https://github.com/.*/docker-(\d\S*)\.tar\.gz
 
-# TODO figure out a good way to match up Go versions too
+# TODO tini
+
+# TODO libnetwork (docker-proxy)
+
+# TODO figure out a good way to match up Go versions for direct compilation too
