@@ -5,6 +5,10 @@ BUNDLE_VERSION = $(shell cat engine/VERSION)
 SYSTEMD_VERSION := $(shell dpkg-query -W -f='$${Version}\n' systemd | cut -d- -f1)
 SYSTEMD_GT_227 := $(shell [ '$(SYSTEMD_VERSION)' ] && [ '$(SYSTEMD_VERSION)' -gt 227 ] && echo true )
 
+# prefer Go 1.8 explicitly if it's available (golang-1.8-go)
+export PATH := /usr/lib/go-1.8/bin:$(PATH)
+# TODO build Go from source instead
+
 override_dh_gencontrol:
 	# if we're on Ubuntu, we need to Recommends: apparmor
 	echo 'apparmor:Recommends=$(shell dpkg-vendor --is Ubuntu && echo apparmor)' >> debian/docker-tianon.substvars
