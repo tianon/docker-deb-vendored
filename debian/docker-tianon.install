@@ -1,8 +1,9 @@
-debian/docker-tianon.docker.socket lib/systemd/system/
-engine/contrib/*-integration usr/share/docker-tianon/contrib/
-engine/contrib/check-config.sh usr/share/docker-tianon/contrib/
-engine/contrib/completion/fish/docker.fish usr/share/fish/vendor_completions.d/
-engine/contrib/completion/zsh/_docker usr/share/zsh/vendor-completions/
-engine/contrib/mk* usr/share/docker-tianon/contrib/
-engine/contrib/nuke-graph-directory.sh usr/share/docker-tianon/contrib/
-engine/contrib/syntax/nano/Dockerfile.nanorc usr/share/nano/
+components/packaging/deb/systemd/docker.service lib/systemd/system/
+components/packaging/deb/systemd/docker.socket lib/systemd/system/
+components/engine/contrib/*-integration usr/share/docker-tianon/contrib/
+components/engine/contrib/check-config.sh usr/share/docker-tianon/contrib/
+components/engine/contrib/completion/fish/docker.fish usr/share/fish/vendor_completions.d/
+components/engine/contrib/completion/zsh/_docker usr/share/zsh/vendor-completions/
+components/engine/contrib/mk* usr/share/docker-tianon/contrib/
+components/engine/contrib/nuke-graph-directory.sh usr/share/docker-tianon/contrib/
+components/engine/contrib/syntax/nano/Dockerfile.nanorc usr/share/nano/
