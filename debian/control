@@ -1,13 +1,15 @@
-Source: docker-ce
+Source: docker-tianon
 Section: admin
 Priority: optional
-Maintainer: Docker <support@docker.com>
-Standards-Version: 3.9.6
+Maintainer: Tianon Gravi <tianon@debian.org>
+Standards-Version: 3.9.8
+Build-Depends: debhelper (>= 9),
+               golang-1.8-go | golang-any (>= 2:1.8~) | golang-go (>= 2:1.8~)
 Homepage: https://dockerproject.org
-Vcs-Browser: https://github.com/docker/docker
-Vcs-Git: git://github.com/docker/docker.git
+Vcs-Browser: https://github.com/docker/docker-ce
+Vcs-Git: git://github.com/docker/docker-ce.git
 
-Package: docker-ce
+Package: docker-tianon
 Architecture: linux-any
 Depends: iptables, ${misc:Depends}, ${perl:Depends}, ${shlibs:Depends}
 Recommends: aufs-tools,
@@ -16,7 +18,14 @@ Recommends: aufs-tools,
             git,
             xz-utils,
             ${apparmor:Recommends}
-Conflicts: docker (<< 1.5~), docker.io, lxc-docker, lxc-docker-virtual-package, docker-engine, docker-engine-cs, docker-ee
+Conflicts: docker (<< 1.5~),
+           docker-ce,
+           docker-ee,
+           docker-engine,
+           docker-engine-cs,
+           docker.io,
+           lxc-docker,
+           lxc-docker-virtual-package
 Replaces: docker-engine
 Description: Docker: the open-source application container engine
  Docker is an open source project to build, ship and run any application as a
