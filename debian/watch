@@ -23,7 +23,13 @@ filenamemangle=s/.+\/docker-(\d\S*)\.tar\.gz/docker-tianon_$1.orig-containerd.ta
   https://uscan.tianon.xyz/github.com/tianon/docker-containerd-tags \
   https://github.com/.*/docker-(\d\S*)\.tar\.gz
 
-# TODO tini
+opts=\
+component=tini,\
+dversionmangle=s/[~+]dfsg\d*$//,\
+uversionmangle=s/-ce//g;s/(\d)[_\.\-\+]?((RC|rc|pre|dev|beta|alpha)\d*)$/$1~$2/,\
+filenamemangle=s/.+\/docker-(\d\S*)\.tar\.gz/docker-tianon_$1.orig-tini.tar.gz/ \
+  https://uscan.tianon.xyz/github.com/tianon/docker-tini-tags \
+  https://github.com/.*/docker-(\d\S*)\.tar\.gz
 
 opts=\
 component=libnetwork,\

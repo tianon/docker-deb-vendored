@@ -5,6 +5,7 @@ Maintainer: Tianon Gravi <tianon@debian.org>
 Standards-Version: 3.9.8
 Build-Depends: bash-completion,
                btrfs-progs,
+               cmake,
                debhelper (>= 9),
                dh-apparmor,
                go-md2man,

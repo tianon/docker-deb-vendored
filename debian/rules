@@ -58,7 +58,10 @@ override_dh_auto_build:
 	# containerd
 	LDFLAGS='' make -C containerd \
 		GIT_COMMIT='docker-$(VERSION)'
-	# TODO tini!!
+	# tini
+	cd tini \
+		&& cmake . \
+		&& make tini-static
 	# docker-proxy
 	go build -o libnetwork/docker-proxy github.com/docker/libnetwork/cmd/proxy
 	# cli
@@ -79,7 +82,8 @@ override_dh_auto_test:
 	./containerd/bin/containerd --version
 	@# "containerd-shim" has no version flag
 	./containerd/bin/ctr --version
-	# TODO tini
+	# tini
+	./tini/tini-static --version
 	# cli
 	./components/cli/build/docker --version
 	# engine
@@ -96,7 +100,8 @@ override_dh_auto_install:
 	cp -aTL containerd/bin/containerd debian/docker-tianon/usr/bin/docker-containerd
 	cp -aTL containerd/bin/containerd-shim debian/docker-tianon/usr/bin/docker-containerd-shim
 	cp -aTL containerd/bin/ctr debian/docker-tianon/usr/bin/docker-containerd-ctr
-	# TODO tini
+	# tini
+	cp -aTL tini/tini-static debian/docker-tianon/usr/bin/docker-init
 	# docker-proxy
 	cp -aTL libnetwork/docker-proxy debian/docker-tianon/usr/bin/docker-proxy
 	# cli
