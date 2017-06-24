@@ -29,6 +29,9 @@ override_dh_auto_configure:
 	# containerd
 	mkdir -p '$(OUR_GOPATH)/src/github.com/containerd'
 	ln -sfT '$(CURDIR)/containerd' '$(OUR_GOPATH)/src/github.com/containerd/containerd'
+	# libnetwork
+	mkdir -p '$(OUR_GOPATH)/src/github.com/docker'
+	ln -sfT '$(CURDIR)/libnetwork' '$(OUR_GOPATH)/src/github.com/docker/libnetwork'
 	# cli
 	mkdir -p '$(OUR_GOPATH)/src/github.com/docker'
 	ln -sfT '$(CURDIR)/components/cli' '$(OUR_GOPATH)/src/github.com/docker/cli'
@@ -56,7 +59,8 @@ override_dh_auto_build:
 	LDFLAGS='' make -C containerd \
 		GIT_COMMIT='docker-$(VERSION)'
 	# TODO tini!!
-	# TODO docker-proxy
+	# docker-proxy
+	go build -o libnetwork/docker-proxy github.com/docker/libnetwork/cmd/proxy
 	# cli
 	LDFLAGS='' make -C components/cli \
 			VERSION='$(VERSION)' \
@@ -92,7 +96,8 @@ override_dh_auto_install:
 	cp -aTL containerd/bin/containerd-shim debian/docker-tianon/usr/bin/docker-containerd-shim
 	cp -aTL containerd/bin/ctr debian/docker-tianon/usr/bin/docker-containerd-ctr
 	# TODO tini
-	# TODO docker-proxy
+	# docker-proxy
+	cp -aTL libnetwork/docker-proxy debian/docker-tianon/usr/bin/docker-proxy
 	# cli
 	cp -aTL components/cli/build/docker debian/docker-tianon/usr/bin/docker
 	# engine
