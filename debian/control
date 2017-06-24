@@ -21,7 +21,7 @@ Vcs-Git: git://github.com/docker/docker-ce.git
 
 Package: docker-tianon
 Architecture: linux-any
-Depends: iptables, ${misc:Depends}, ${perl:Depends}, ${shlibs:Depends}
+Depends: iptables, ${misc:Depends}, ${shlibs:Depends}
 Recommends: aufs-tools,
             ca-certificates,
             cgroupfs-mount | cgroup-lite,
