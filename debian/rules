@@ -48,7 +48,7 @@ _build-manpages:
 			--root . --target ./man/man1 \
 		&& ./man/md2man-all.sh -q
 
-override_dh_auto_build:
+override_dh_auto_build-arch:
 	# golang
 	cd golang/src \
 		&& GOROOT_BOOTSTRAP="$$(env -i go env GOROOT)" \
@@ -85,7 +85,7 @@ override_dh_auto_build:
 		&& DOCKER_GITCOMMIT='v$(VERSION)' \
 			./hack/make.sh dynbinary
 
-override_dh_auto_test:
+override_dh_auto_test-arch:
 	# runc
 	./runc/runc --version
 	# containerd
@@ -102,7 +102,7 @@ override_dh_auto_test:
 override_dh_strip:
 	# Go has lots of problems with stripping, so just don't
 
-override_dh_auto_install:
+override_dh_auto_install-arch:
 	mkdir -p debian/docker-tianon/usr/bin
 	# runc
 	cp -aTL runc/runc debian/docker-tianon/usr/bin/docker-runc
