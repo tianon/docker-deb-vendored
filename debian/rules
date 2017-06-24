@@ -9,9 +9,8 @@ SYSTEMD_GT_227 := $(shell [ '$(SYSTEMD_VERSION)' ] && [ '$(SYSTEMD_VERSION)' -gt
 OUR_GOPATH := $(CURDIR)/.gopath
 export GOPATH := $(OUR_GOPATH)
 
-# prefer Go 1.8 explicitly if it's available (golang-1.8-go)
-export PATH := /usr/lib/go-1.8/bin:$(PATH)
-# TODO build Go from source instead
+# prefer our custom-built Go explicitly (which will be built first thing in override_dh_auto_build)
+export PATH := $(CURDIR)/golang/bin:$(PATH)
 
 override_dh_auto_clean:
 	@# stop debhelper from doing "make clean"
@@ -50,6 +49,17 @@ _build-manpages:
 		&& ./man/md2man-all.sh -q
 
 override_dh_auto_build:
+	# golang
+	cd golang/src \
+		&& GOROOT_BOOTSTRAP="$$(env -i go env GOROOT)" \
+			GOOS="$$(env -i go env GOOS)" \
+			GOARCH="$$(env -i go env GOARCH)" \
+			GO386="$$(env -i go env GO386)" \
+			GOARM="$$(env -i go env GOARM)" \
+			GOHOSTOS="$$(env -i go env GOHOSTOS)" \
+			GOHOSTARCH="$$(env -i go env GOHOSTARCH)" \
+			./make.bash
+	[ "$$(readlink -f "$$(go env GOROOT)")" = "$$(readlink -f '$(CURDIR)/golang')" ] && go version
 	# runc
 	cd '$(OUR_GOPATH)/src/github.com/opencontainers/runc' \
 		&& make \
