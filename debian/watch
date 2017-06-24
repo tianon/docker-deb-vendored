@@ -1,7 +1,6 @@
 version=4
 
 opts=\
-dversionmangle=s/[+~](debian|dfsg|ds|deb)\d*$//,\
 uversionmangle=s/-ce//g;s/(\d)[_\.\-\+]?((RC|rc|pre|dev|beta|alpha)\d*)$/$1~$2/,\
 filenamemangle=s/.+\/v(\d\S*)\.tar\.gz/docker-tianon_$1.orig.tar.gz/ \
   https://uscan.tianon.xyz/github.com/docker/docker-ce \
@@ -9,7 +8,6 @@ filenamemangle=s/.+\/v(\d\S*)\.tar\.gz/docker-tianon_$1.orig.tar.gz/ \
 
 opts=\
 component=runc,\
-dversionmangle=s/[~+]dfsg\d*$//,\
 uversionmangle=s/-ce//g;s/(\d)[_\.\-\+]?((RC|rc|pre|dev|beta|alpha)\d*)$/$1~$2/,\
 filenamemangle=s/.+\/docker-(\d\S*)\.tar\.gz/docker-tianon_$1.orig-runc.tar.gz/ \
   https://uscan.tianon.xyz/github.com/tianon/docker-runc-tags \
@@ -17,7 +15,6 @@ filenamemangle=s/.+\/docker-(\d\S*)\.tar\.gz/docker-tianon_$1.orig-runc.tar.gz/ 
 
 opts=\
 component=containerd,\
-dversionmangle=s/[~+]dfsg\d*$//,\
 uversionmangle=s/-ce//g;s/(\d)[_\.\-\+]?((RC|rc|pre|dev|beta|alpha)\d*)$/$1~$2/,\
 filenamemangle=s/.+\/docker-(\d\S*)\.tar\.gz/docker-tianon_$1.orig-containerd.tar.gz/ \
   https://uscan.tianon.xyz/github.com/tianon/docker-containerd-tags \
@@ -25,7 +22,6 @@ filenamemangle=s/.+\/docker-(\d\S*)\.tar\.gz/docker-tianon_$1.orig-containerd.ta
 
 opts=\
 component=tini,\
-dversionmangle=s/[~+]dfsg\d*$//,\
 uversionmangle=s/-ce//g;s/(\d)[_\.\-\+]?((RC|rc|pre|dev|beta|alpha)\d*)$/$1~$2/,\
 filenamemangle=s/.+\/docker-(\d\S*)\.tar\.gz/docker-tianon_$1.orig-tini.tar.gz/ \
   https://uscan.tianon.xyz/github.com/tianon/docker-tini-tags \
@@ -33,7 +29,6 @@ filenamemangle=s/.+\/docker-(\d\S*)\.tar\.gz/docker-tianon_$1.orig-tini.tar.gz/ 
 
 opts=\
 component=libnetwork,\
-dversionmangle=s/[~+]dfsg\d*$//,\
 uversionmangle=s/-ce//g;s/(\d)[_\.\-\+]?((RC|rc|pre|dev|beta|alpha)\d*)$/$1~$2/,\
 filenamemangle=s/.+\/docker-(\d\S*)\.tar\.gz/docker-tianon_$1.orig-libnetwork.tar.gz/ \
   https://uscan.tianon.xyz/github.com/tianon/docker-libnetwork-tags \
