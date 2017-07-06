@@ -13,9 +13,9 @@ Build-Depends-Arch: btrfs-progs,
                     libltdl-dev,
                     libseccomp-dev,
                     pkg-config
-Homepage: https://dockerproject.org
+Homepage: https://www.docker.com
 Vcs-Browser: https://github.com/docker/docker-ce
-Vcs-Git: git://github.com/docker/docker-ce.git
+Vcs-Git: https://github.com/docker/docker-ce.git
 
 Package: docker-tianon
 Architecture: linux-any
