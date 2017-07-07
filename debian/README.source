@@ -1,0 +1,24 @@
+To download the orig tarballs, I use "uscan":
+
+	uscan --verbose --download-current-version
+
+This should create files like the following in "..":
+
+	docker-tianon_17.06.0.orig-containerd.tar.gz
+	docker-tianon_17.06.0.orig-golang.tar.gz
+	docker-tianon_17.06.0.orig-libnetwork.tar.gz
+	docker-tianon_17.06.0.orig-runc.tar.gz
+	docker-tianon_17.06.0.orig.tar.gz
+	docker-tianon_17.06.0.orig-tini.tar.gz
+
+The only file here that's specific to my workflow is "debian/watch" ("uscan") -- the rest of this, given the appropriate orig tarballs, should work as-is.
+
+In "debian/watch", the following repositories are used to gather the appropriate bits for building properly:
+
+	https://github.com/docker/docker-ce
+	https://github.com/tianon/docker-containerd-tags
+	https://github.com/tianon/docker-libnetwork-tags
+	https://github.com/tianon/docker-runc-tags
+	https://github.com/tianon/docker-tini-tags
+
+Additionally, the desired Go version is hard-coded in "debian/watch" and fetched from https://golang.org/dl/ (source releases, built and then used during the package build).
