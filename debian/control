@@ -13,7 +13,7 @@ Build-Depends-Arch: btrfs-progs,
                     libltdl-dev,
                     libseccomp-dev,
                     pkg-config
-Homepage: https://www.docker.com
+Homepage: https://www.docker.com/community-edition
 Vcs-Browser: https://github.com/docker/docker-ce
 Vcs-Git: https://github.com/docker/docker-ce.git
 
