@@ -14,8 +14,10 @@ Build-Depends-Arch: btrfs-progs,
                     libseccomp-dev,
                     pkg-config
 Homepage: https://www.docker.com/community-edition
-Vcs-Browser: https://github.com/docker/docker-ce
-Vcs-Git: https://github.com/docker/docker-ce.git
+#Vcs-Browser: https://github.com/docker/docker-ce
+#Vcs-Git: https://github.com/docker/docker-ce.git
+Vcs-Browser: https://github.com/tianon/docker-deb-vendored
+Vcs-Git: https://github.com/tianon/docker-deb-vendored.git
 
 Package: docker-tianon
 Architecture: linux-any
