@@ -35,6 +35,7 @@ filenamemangle=s/.+\/docker-(\d\S*)\.tar\.gz/docker-tianon_$1.orig-libnetwork.ta
   https://github.com/.*/docker-(\d\S*)\.tar\.gz
 
 # TODO figure out a better way to scrape/embed the expected Go version (see dversionmangle below)
+# https://github.com/docker/docker-ce/blob/v17.06.1-ce/components/engine/Dockerfile#L113
 opts=\
 component=golang,\
 dversionmangle=s/.*/1.8.3/,\
