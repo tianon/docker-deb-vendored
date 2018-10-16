@@ -4,28 +4,27 @@ Priority: optional
 Maintainer: Tianon Gravi <tianon@debian.org>
 Standards-Version: 3.9.8
 Build-Depends: bash-completion, debhelper (>= 9), dh-apparmor
-Build-Depends-Arch: btrfs-progs | btrfs-tools (>= 3.16~),
-                    cmake,
+Build-Depends-Arch: cmake,
+                    dh-exec,
                     go-md2man,
                     golang-any (>= 2:1.4~) | golang-go (>= 2:1.4~) | gccgo (>= 4:5~),
                     libapparmor-dev,
+                    libbtrfs-dev | btrfs-progs | btrfs-tools (>= 3.16~),
                     libdevmapper-dev,
                     libltdl-dev,
                     libseccomp-dev,
                     pkg-config
 Homepage: https://www.docker.com/community-edition
-#Vcs-Browser: https://github.com/docker/docker-ce
-#Vcs-Git: https://github.com/docker/docker-ce.git
 Vcs-Browser: https://github.com/tianon/docker-deb-vendored
 Vcs-Git: https://github.com/tianon/docker-deb-vendored.git
 
 Package: docker-tianon
 Architecture: linux-any
 Depends: iptables, ${misc:Depends}, ${shlibs:Depends}
-Recommends: aufs-tools,
-            ca-certificates,
+Recommends: ca-certificates,
             cgroupfs-mount | cgroup-lite,
             git,
+            pigz,
             xz-utils,
             ${apparmor:Recommends}
 Conflicts: docker (<< 1.5~),
@@ -42,7 +41,7 @@ Description: Docker: the open-source application container engine
  lightweight container
  .
  Docker containers are both hardware-agnostic and platform-agnostic. This means
- they can run anywhere, from your laptop to the largest EC2 compute instance and
+ they can run anywhere, from your laptop to the largest cloud compute instance and
  everything in between - and they don't require you to use a particular
  language, framework or packaging system. That makes them great building blocks
  for deploying and scaling web apps, databases, and backend services without

@@ -1,9 +1,16 @@
-components/cli/contrib/completion/fish/docker.fish usr/share/fish/vendor_completions.d/
+#!/usr/bin/dh-exec
+
+# https://github.com/docker/docker-ce/blob/v17.12.1-ce/components/packaging/deb/common/rules#L24-L31
+components/cli/build/docker => usr/bin/docker
+components/engine/bundles/latest/dynbinary-daemon/dockerd => usr/bin/dockerd
+libnetwork/docker-proxy => usr/bin/docker-proxy
+containerd/bin/containerd => usr/bin/docker-containerd
+containerd/bin/containerd-shim => usr/bin/docker-containerd-shim
+containerd/bin/ctr => usr/bin/docker-containerd-ctr
+runc/runc => usr/bin/docker-runc
+tini/build/tini-static => usr/bin/docker-init
+
 components/cli/contrib/completion/zsh/_docker usr/share/zsh/vendor-completions/
-components/engine/contrib/*-integration usr/share/docker-tianon/contrib/
-components/engine/contrib/check-config.sh usr/share/docker-tianon/contrib/
-components/engine/contrib/mk* usr/share/docker-tianon/contrib/
-components/engine/contrib/nuke-graph-directory.sh usr/share/docker-tianon/contrib/
-components/engine/contrib/syntax/nano/Dockerfile.nanorc usr/share/nano/
-components/packaging/deb/systemd/docker.service lib/systemd/system/
+components/engine/contrib/check-config.sh usr/share/docker.io/contrib/
+components/engine/contrib/nuke-graph-directory.sh usr/share/docker.io/contrib/
 components/packaging/deb/systemd/docker.socket lib/systemd/system/
