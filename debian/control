@@ -3,7 +3,10 @@ Section: admin
 Priority: optional
 Maintainer: Tianon Gravi <tianon@debian.org>
 Standards-Version: 3.9.8
-Build-Depends: bash-completion, debhelper (>= 9), dh-apparmor
+Build-Depends: bash-completion,
+               debhelper (>= 9),
+               debhelper (>= 9.20160709~) | dh-systemd,
+               dh-apparmor
 Build-Depends-Arch: cmake,
                     dh-exec,
                     go-md2man,

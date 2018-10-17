@@ -4,9 +4,6 @@ export VERSION := $(shell cat VERSION)
 
 export DOCKER_GITCOMMIT := v$(VERSION)
 
-SYSTEMD_VERSION := $(shell dpkg-query -W -f='$${Version}\n' systemd | cut -d- -f1)
-SYSTEMD_GT_227 := $(shell [ '$(SYSTEMD_VERSION)' ] && [ '$(SYSTEMD_VERSION)' -gt 227 ] && echo true )
-
 # temporary build path (see http://golang.org/doc/code.html#GOPATH)
 OUR_GOPATH := $(CURDIR)/.gopath
 export GOPATH := $(OUR_GOPATH)
@@ -69,7 +66,7 @@ _build-runc: _build-golang
 	cd '$(OUR_GOPATH)/src/github.com/opencontainers/runc' \
 		&& make \
 			BUILDTAGS='seccomp apparmor selinux' \
-			COMMIT='$(shell . components/engine/hack/dockerfile/binaries-commits && echo "$$RUNC_COMMIT")'
+			COMMIT='$(shell eval "$$(grep -E '^RUNC_COMMIT=' components/engine/hack/dockerfile/install/runc.installer)" && echo "$$RUNC_COMMIT")'
 	# (we use the exact commit Docker does, so we pass that value to "runc" when we build it)
 
 _build-containerd: _build-golang
@@ -77,7 +74,7 @@ _build-containerd: _build-golang
 		&& make \
 			LDFLAGS='' \
 			VERSION='docker-$(VERSION)' \
-			REVISION='$(shell . components/engine/hack/dockerfile/binaries-commits && echo "$$CONTAINERD_COMMIT")'
+			REVISION='$(shell eval "$$(grep -E '^CONTAINERD_COMMIT=' components/engine/hack/dockerfile/install/containerd.installer)" && echo "$$CONTAINERD_COMMIT")'
 	# (we use the exact commit Docker does, so we pass that value to "containerd" when we build it)
 
 _build-tini: # (docker-init)
@@ -134,10 +131,9 @@ override_dh_auto_install:
 override_dh_installinit:
 	# use "docker" as our service name, not "docker-tianon"
 	dh_installinit --name=docker
-ifeq (true, $(SYSTEMD_GT_227))
-	$(warning "Setting TasksMax=infinity")
-	sed -i -- 's/#TasksMax=infinity/TasksMax=infinity/' debian/docker-tianon/lib/systemd/system/docker.service
-endif
+	grep -E '^#TasksMax=infinity$$' debian/docker-tianon/lib/systemd/system/docker.service \
+		&& sed -i -- 's/#TasksMax=infinity/TasksMax=infinity/' debian/docker-tianon/lib/systemd/system/docker.service \
+		&& grep -E '^TasksMax=infinity$$' debian/docker-tianon/lib/systemd/system/docker.service
 
 override_dh_installudev:
 	# use priority z80 to match the upstream priority of 80
@@ -154,4 +150,4 @@ override_dh_auto_clean:
 	@# stop debhelper from doing "make clean"
 
 %:
-	dh $@ --with=bash-completion $(shell command -v dh_systemd_enable > /dev/null 2>&1 && echo --with=systemd)
+	dh $@ --with=bash-completion,systemd
