@@ -9,7 +9,10 @@ OUR_GOPATH := $(CURDIR)/.gopath
 export GOPATH := $(OUR_GOPATH)
 
 # prefer our custom-built Go explicitly (which will be built first thing in override_dh_auto_build)
-export PATH := $(CURDIR)/golang/bin:$(PATH)
+OUR_GOROOT := $(shell [ -d '$(CURDIR)/golang/src' ] && echo -n '$(CURDIR)/golang' || echo -n '$(CURDIR)/golang/go')
+# for some reason, go1.10.8 includes empty "gocache" and "tmp" directories inside the tarball... (which screws up dpkg-deb's orig handling): https://fossies.org/diffs/go/1.10.7_vs_1.10.8/#Directories
+# TODO once we're off go1.10.8, OUR_GOROOT should switch back to always being $(CURDIR)/golang
+export PATH := $(OUR_GOROOT)/bin:$(PATH)
 
 # AppArmor can be optionally used in Debian and is there by default in Ubuntu, so we need support for it compiled into our binary
 # same story with SELinux
@@ -51,7 +54,8 @@ override_dh_auto_build-arch: _build-runc _build-containerd _build-tini _build-pr
 
 _build-golang:
 	# golang
-	cd golang/src \
+	@# for some reason, go1.10.8 includes empty "gocache" and "tmp" directories inside the tarball... (which screws up dpkg-deb's orig handling): https://fossies.org/diffs/go/1.10.7_vs_1.10.8/#Directories
+	cd '$(OUR_GOROOT)/src' \
 		&& GOROOT_BOOTSTRAP="$$(env -i go env GOROOT)" \
 			GOOS="$$(env -i go env GOOS)" \
 			GOARCH="$$(env -i go env GOARCH)" \
@@ -60,7 +64,7 @@ _build-golang:
 			GOHOSTOS="$$(env -i go env GOHOSTOS)" \
 			GOHOSTARCH="$$(env -i go env GOHOSTARCH)" \
 			./make.bash
-	[ "$$(readlink -f "$$(go env GOROOT)")" = "$$(readlink -f '$(CURDIR)/golang')" ] && go version
+	[ "$$(readlink -f "$$(go env GOROOT)")" = "$$(readlink -f '$(OUR_GOROOT)')" ] && go version
 
 _build-runc: _build-golang
 	cd '$(OUR_GOPATH)/src/github.com/opencontainers/runc' \
@@ -131,9 +135,6 @@ override_dh_auto_install:
 override_dh_installinit:
 	# use "docker" as our service name, not "docker-tianon"
 	dh_installinit --name=docker
-	grep -E '^#TasksMax=infinity$$' debian/docker-tianon/lib/systemd/system/docker.service \
-		&& sed -i -- 's/#TasksMax=infinity/TasksMax=infinity/' debian/docker-tianon/lib/systemd/system/docker.service \
-		&& grep -E '^TasksMax=infinity$$' debian/docker-tianon/lib/systemd/system/docker.service
 
 override_dh_installudev:
 	# use priority z80 to match the upstream priority of 80
