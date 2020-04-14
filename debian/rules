@@ -125,7 +125,7 @@ override_dh_auto_test-arch:
 	# cli
 	./components/cli/build/docker --version
 	# engine
-	./components/engine/bundles/latest/dynbinary-daemon/dockerd --version
+	./components/engine/bundles/dynbinary-daemon/dockerd --version
 
 override_dh_strip:
 	# Go has lots of problems with stripping, so just don't

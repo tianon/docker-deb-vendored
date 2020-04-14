@@ -38,10 +38,10 @@ filenamemangle=s/.+\/docker-(\d\S*)\.tar\.gz/docker-tianon_$1.orig-tini.tar.gz/ 
   https://github.com/.*/docker-(\d\S*)\.tar\.gz
 
 # TODO figure out a better way to scrape/embed the expected Go version (see dversionmangle below)
-# https://github.com/docker/docker-ce/blob/v18.09.9/components/engine/Dockerfile#L27
+# https://github.com/docker/docker-ce/blob/v19.03.8/components/engine/Dockerfile#L29
 opts=\
 component=golang,\
-dversionmangle=s/.*/1.11.13/,\
+dversionmangle=s/.*/1.12.17/,\
 uversionmangle=s/-ce//g;s/(\d)[_\.\-\+]?((RC|rc|pre|dev|beta|alpha)\d*)$/$1~$2/ \
   https://golang.org/dl/ \
   .*/go(\d\S*)\.src\.tar\.gz
