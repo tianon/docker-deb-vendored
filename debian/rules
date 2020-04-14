@@ -7,11 +7,12 @@ export DOCKER_GITCOMMIT := v$(VERSION)
 # temporary build path (see http://golang.org/doc/code.html#GOPATH)
 OUR_GOPATH := $(CURDIR)/.gopath
 export GOPATH := $(OUR_GOPATH)
+export GOCACHE := $(OUR_GOPATH)/.cache
+export GO111MODULE := off
+export GOPROXY := off
 
 # prefer our custom-built Go explicitly (which will be built first thing in override_dh_auto_build)
-OUR_GOROOT := $(shell [ -d '$(CURDIR)/golang/src' ] && echo -n '$(CURDIR)/golang' || echo -n '$(CURDIR)/golang/go')
-# for some reason, go1.10.8 includes empty "gocache" and "tmp" directories inside the tarball... (which screws up dpkg-deb's orig handling): https://fossies.org/diffs/go/1.10.7_vs_1.10.8/#Directories
-# TODO once we're off go1.10.8, OUR_GOROOT should switch back to always being $(CURDIR)/golang
+OUR_GOROOT := $(CURDIR)/golang
 export PATH := $(OUR_GOROOT)/bin:$(PATH)
 
 # AppArmor can be optionally used in Debian and is there by default in Ubuntu, so we need support for it compiled into our binary
