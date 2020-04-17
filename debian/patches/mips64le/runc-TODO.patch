@@ -1,0 +1,20 @@
+diff --git a/runc/Makefile b/runc/Makefile
+index 0f26a1c8..1302d216 100644
+--- a/runc/Makefile
++++ b/runc/Makefile
+@@ -29,8 +29,14 @@ SHELL := $(shell command -v bash 2>/dev/null)
+ 
+ .DEFAULT: runc
+ 
++ifeq ($(GOOS),linux)
++  ifneq ($(GOARCH),$(filter $(GOARCH),mips mipsle mips64 mips64le ppc64))
++	EXTRA_FLAGS += -buildmode=pie
++  endif
++endif
++
+ runc: $(SOURCES)
+-	$(GO) build -buildmode=pie $(EXTRA_FLAGS) -ldflags "-X main.gitCommit=${COMMIT} -X main.version=${VERSION} $(EXTRA_LDFLAGS)" -tags "$(BUILDTAGS)" -o runc .
++	$(GO) build $(EXTRA_FLAGS) -ldflags "-X main.gitCommit=${COMMIT} -X main.version=${VERSION} $(EXTRA_LDFLAGS)" -tags "$(BUILDTAGS)" -o runc .
+ 
+ all: runc recvtty
+ 

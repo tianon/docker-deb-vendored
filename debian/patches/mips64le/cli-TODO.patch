@@ -1,0 +1,23 @@
+diff --git a/components/cli/scripts/build/dynbinary b/components/cli/scripts/build/dynbinary
+index 4feb7e71d..ce421a0a4 100755
+--- a/components/cli/scripts/build/dynbinary
++++ b/components/cli/scripts/build/dynbinary
+@@ -7,8 +7,17 @@ set -eu -o pipefail
+ 
+ source ./scripts/build/.variables
+ 
++case "$(go env GOARCH)" in
++	mips*)
++		BUILDMODE=
++		;;
++	*)
++		BUILDMODE='-buildmode=pie'
++		;;
++esac
++
+ echo "Building dynamically linked $TARGET"
+ export CGO_ENABLED=1
+-go build -o "${TARGET}" -tags pkcs11 --ldflags "${LDFLAGS}" -buildmode=pie "${SOURCE}"
++go build -o "${TARGET}" -tags pkcs11 --ldflags "${LDFLAGS}" $BUILDMODE "${SOURCE}"
+ 
+ ln -sf "$(basename "${TARGET}")" build/docker

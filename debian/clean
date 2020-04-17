@@ -4,6 +4,7 @@ components/cli/man/man*/
 components/engine/bundles/
 components/engine/dockerversion/*_autogen*.go
 containerd/bin/
+containerd/vendor/github.com/docker/docker/
 golang/bin/
 golang/pkg/
 golang/src/cmd/cgo/zdefaultcc.go

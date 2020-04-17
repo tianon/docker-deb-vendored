@@ -1,0 +1,29 @@
+From 5f0231bca193320e1a3d785a3ade0e64241fe580 Mon Sep 17 00:00:00 2001
+From: Dominic <yindongchao@inspur.com>
+Date: Thu, 1 Aug 2019 16:48:48 +0800
+Subject: [PATCH] cast Dev and Rdev of Stat_t to uint64 for mips
+
+Signed-off-by: Dominic <yindongchao@inspur.com>
+Signed-off-by: Dominic Yin <yindongchao@inspur.com>
+---
+ daemon/daemon_unix.go                     | 10 ++++++----
+ daemon/graphdriver/copy/copy.go           |  3 ++-
+ daemon/graphdriver/devmapper/deviceset.go |  6 ++++--
+ pkg/loopback/loopback.go                  |  3 ++-
+ pkg/system/stat_linux.go                  |  3 ++-
+ 5 files changed, 16 insertions(+), 9 deletions(-)
+
+diff --git a/components/cli/vendor/github.com/docker/docker/pkg/system/stat_linux.go b/components/cli/vendor/github.com/docker/docker/pkg/system/stat_linux.go
+index 98c9eb18d18d..17d5d131a3c8 100644
+--- a/components/cli/vendor/github.com/docker/docker/pkg/system/stat_linux.go
++++ b/components/cli/vendor/github.com/docker/docker/pkg/system/stat_linux.go
+@@ -8,7 +8,8 @@ func fromStatT(s *syscall.Stat_t) (*StatT, error) {
+ 		mode: s.Mode,
+ 		uid:  s.Uid,
+ 		gid:  s.Gid,
+-		rdev: s.Rdev,
++		// the type is 32bit on mips
++		rdev: uint64(s.Rdev), // nolint: unconvert
+ 		mtim: s.Mtim}, nil
+ }
+ 

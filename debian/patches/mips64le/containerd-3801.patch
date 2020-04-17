@@ -1,0 +1,24 @@
+From 4c99c81326f4026fb8c0b8c5e10542205d99c321 Mon Sep 17 00:00:00 2001
+From: Johann Neuhauser <johann@it-neuhauser.de>
+Date: Wed, 6 Nov 2019 12:50:58 +0100
+Subject: [PATCH] mips: -buildmode=pie is not supported for the mips arch
+
+Signed-off-by: Johann Neuhauser <johann@it-neuhauser.de>
+---
+ Makefile.linux | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/containerd/Makefile.linux b/containerd/Makefile.linux
+index a9f91bbcf6..aba7b149f8 100644
+--- a/containerd/Makefile.linux
++++ b/containerd/Makefile.linux
+@@ -18,7 +18,9 @@ COMMANDS += containerd-shim containerd-shim-runc-v1
+ 
+ # check GOOS for cross compile builds
+ ifeq ($(GOOS),linux)
++  ifneq ($(GOARCH),$(filter $(GOARCH),mips mipsle mips64 mips64le ppc64))
+ 	GO_GCFLAGS += -buildmode=pie
++  endif
+ endif
+ 
+ # amd64 supports go test -race

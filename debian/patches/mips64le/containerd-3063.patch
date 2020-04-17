@@ -1,0 +1,2087 @@
+From 1745951bad5cab736bd6284fab710c52512f1f24 Mon Sep 17 00:00:00 2001
+From: Shengjing Zhu <zhsj@debian.org>
+Date: Sun, 3 Mar 2019 20:59:13 +0800
+Subject: [PATCH 1/2] Vendor golang.org/x/sys
+ d455e41777fca6e8a5a79e34a14b8368bc11d9ba
+
+Signed-off-by: Shengjing Zhu <zhsj@debian.org>
+---
+ vendor.conf                                   |   2 +-
+ vendor/golang.org/x/sys/cpu/byteorder.go      |  30 ++++
+ vendor/golang.org/x/sys/cpu/cpu.go            |  37 ++++
+ vendor/golang.org/x/sys/cpu/cpu_arm64.go      |  67 --------
+ vendor/golang.org/x/sys/cpu/cpu_gc_s390x.go   |  21 +++
+ .../golang.org/x/sys/cpu/cpu_gccgo_s390x.go   |  22 +++
+ vendor/golang.org/x/sys/cpu/cpu_linux.go      |  38 ++---
+ .../golang.org/x/sys/cpu/cpu_linux_arm64.go   |  67 ++++++++
+ .../{cpu_ppc64x.go => cpu_linux_ppc64x.go}    |   9 +-
+ .../golang.org/x/sys/cpu/cpu_linux_s390x.go   | 161 ++++++++++++++++++
+ .../cpu/{cpu_s390x.go => cpu_other_arm64.go}  |   6 +-
+ .../golang.org/x/sys/cpu/cpu_other_ppc64x.go  |  12 ++
+ vendor/golang.org/x/sys/cpu/cpu_s390x.s       |  57 +++++++
+ vendor/golang.org/x/sys/cpu/cpu_x86.go        |   2 +
+ vendor/golang.org/x/sys/unix/README.md        |  16 +-
+ vendor/golang.org/x/sys/unix/sockcmsg_unix.go |   4 +-
+ .../golang.org/x/sys/unix/syscall_darwin.go   |   1 +
+ vendor/golang.org/x/sys/unix/syscall_linux.go |  14 ++
+ vendor/golang.org/x/sys/unix/syscall_unix.go  |  18 ++
+ .../x/sys/unix/zsyscall_darwin_amd64.go       |  15 ++
+ .../x/sys/unix/zsyscall_darwin_amd64.s        |   2 +
+ .../x/sys/unix/zsyscall_solaris_amd64.go      |   2 +-
+ .../x/sys/unix/zsysnum_darwin_amd64.go        |   6 +-
+ .../golang.org/x/sys/unix/ztypes_linux_386.go |  18 ++
+ .../x/sys/unix/ztypes_linux_amd64.go          |  18 ++
+ .../golang.org/x/sys/unix/ztypes_linux_arm.go |  18 ++
+ .../x/sys/unix/ztypes_linux_arm64.go          |  18 ++
+ .../x/sys/unix/ztypes_linux_mips.go           |  18 ++
+ .../x/sys/unix/ztypes_linux_mips64.go         |  18 ++
+ .../x/sys/unix/ztypes_linux_mips64le.go       |  18 ++
+ .../x/sys/unix/ztypes_linux_mipsle.go         |  18 ++
+ .../x/sys/unix/ztypes_linux_ppc64.go          |  18 ++
+ .../x/sys/unix/ztypes_linux_ppc64le.go        |  18 ++
+ .../x/sys/unix/ztypes_linux_riscv64.go        |  18 ++
+ .../x/sys/unix/ztypes_linux_s390x.go          |  18 ++
+ .../x/sys/unix/ztypes_linux_sparc64.go        |  18 ++
+ .../x/sys/windows/security_windows.go         |   2 +-
+ .../golang.org/x/sys/windows/svc/service.go   |  26 +--
+ vendor/golang.org/x/sys/windows/svc/sys_386.s |   3 +-
+ .../golang.org/x/sys/windows/svc/sys_amd64.s  |   2 +
+ 40 files changed, 754 insertions(+), 122 deletions(-)
+ create mode 100644 vendor/golang.org/x/sys/cpu/byteorder.go
+ delete mode 100644 vendor/golang.org/x/sys/cpu/cpu_arm64.go
+ create mode 100644 vendor/golang.org/x/sys/cpu/cpu_gc_s390x.go
+ create mode 100644 vendor/golang.org/x/sys/cpu/cpu_gccgo_s390x.go
+ create mode 100644 vendor/golang.org/x/sys/cpu/cpu_linux_arm64.go
+ rename vendor/golang.org/x/sys/cpu/{cpu_ppc64x.go => cpu_linux_ppc64x.go} (71%)
+ create mode 100644 vendor/golang.org/x/sys/cpu/cpu_linux_s390x.go
+ rename vendor/golang.org/x/sys/cpu/{cpu_s390x.go => cpu_other_arm64.go} (56%)
+ create mode 100644 vendor/golang.org/x/sys/cpu/cpu_other_ppc64x.go
+ create mode 100644 vendor/golang.org/x/sys/cpu/cpu_s390x.s
+
+diff --git a/containerd/vendor/golang.org/x/sys/cpu/byteorder.go b/containerd/vendor/golang.org/x/sys/cpu/byteorder.go
+new file mode 100644
+index 0000000000..da6b9e4363
+--- /dev/null
++++ b/containerd/vendor/golang.org/x/sys/cpu/byteorder.go
+@@ -0,0 +1,30 @@
++// Copyright 2019 The Go Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style
++// license that can be found in the LICENSE file.
++
++package cpu
++
++import (
++	"encoding/binary"
++	"runtime"
++)
++
++// hostByteOrder returns binary.LittleEndian on little-endian machines and
++// binary.BigEndian on big-endian machines.
++func hostByteOrder() binary.ByteOrder {
++	switch runtime.GOARCH {
++	case "386", "amd64", "amd64p32",
++		"arm", "arm64",
++		"mipsle", "mips64le", "mips64p32le",
++		"ppc64le",
++		"riscv", "riscv64":
++		return binary.LittleEndian
++	case "armbe", "arm64be",
++		"mips", "mips64", "mips64p32",
++		"ppc", "ppc64",
++		"s390", "s390x",
++		"sparc", "sparc64":
++		return binary.BigEndian
++	}
++	panic("unknown architecture")
++}
+diff --git a/containerd/vendor/golang.org/x/sys/cpu/cpu.go b/containerd/vendor/golang.org/x/sys/cpu/cpu.go
+index 6b0034ecd7..679e78c2ce 100644
+--- a/containerd/vendor/golang.org/x/sys/cpu/cpu.go
++++ b/containerd/vendor/golang.org/x/sys/cpu/cpu.go
+@@ -6,6 +6,13 @@
+ // various CPU architectures.
+ package cpu
+ 
++// Initialized reports whether the CPU features were initialized.
++//
++// For some GOOS/GOARCH combinations initialization of the CPU features depends
++// on reading an operating specific file, e.g. /proc/self/auxv on linux/arm
++// Initialized will report false if reading the file fails.
++var Initialized bool
++
+ // CacheLinePad is used to pad structs to avoid false sharing.
+ type CacheLinePad struct{ _ [cacheLineSize]byte }
+ 
+@@ -87,3 +94,33 @@ var PPC64 struct {
+ 	IsPOWER9 bool // ISA v3.00 (POWER9)
+ 	_        CacheLinePad
+ }
++
++// S390X contains the supported CPU features of the current IBM Z
++// (s390x) platform. If the current platform is not IBM Z then all
++// feature flags are false.
++//
++// S390X is padded to avoid false sharing. Further HasVX is only set
++// if the OS supports vector registers in addition to the STFLE
++// feature bit being set.
++var S390X struct {
++	_         CacheLinePad
++	HasZARCH  bool // z/Architecture mode is active [mandatory]
++	HasSTFLE  bool // store facility list extended
++	HasLDISP  bool // long (20-bit) displacements
++	HasEIMM   bool // 32-bit immediates
++	HasDFP    bool // decimal floating point
++	HasETF3EH bool // ETF-3 enhanced
++	HasMSA    bool // message security assist (CPACF)
++	HasAES    bool // KM-AES{128,192,256} functions
++	HasAESCBC bool // KMC-AES{128,192,256} functions
++	HasAESCTR bool // KMCTR-AES{128,192,256} functions
++	HasAESGCM bool // KMA-GCM-AES{128,192,256} functions
++	HasGHASH  bool // KIMD-GHASH function
++	HasSHA1   bool // K{I,L}MD-SHA-1 functions
++	HasSHA256 bool // K{I,L}MD-SHA-256 functions
++	HasSHA512 bool // K{I,L}MD-SHA-512 functions
++	HasSHA3   bool // K{I,L}MD-SHA3-{224,256,384,512} and K{I,L}MD-SHAKE-{128,256} functions
++	HasVX     bool // vector facility
++	HasVXE    bool // vector-enhancements facility 1
++	_         CacheLinePad
++}
+diff --git a/containerd/vendor/golang.org/x/sys/cpu/cpu_arm64.go b/containerd/vendor/golang.org/x/sys/cpu/cpu_arm64.go
+deleted file mode 100644
+index 02ed58b30d..0000000000
+--- a/containerd/vendor/golang.org/x/sys/cpu/cpu_arm64.go
++++ /dev/null
+@@ -1,67 +0,0 @@
+-// Copyright 2018 The Go Authors. All rights reserved.
+-// Use of this source code is governed by a BSD-style
+-// license that can be found in the LICENSE file.
+-
+-package cpu
+-
+-const cacheLineSize = 64
+-
+-// HWCAP/HWCAP2 bits. These are exposed by Linux.
+-const (
+-	hwcap_FP       = 1 << 0
+-	hwcap_ASIMD    = 1 << 1
+-	hwcap_EVTSTRM  = 1 << 2
+-	hwcap_AES      = 1 << 3
+-	hwcap_PMULL    = 1 << 4
+-	hwcap_SHA1     = 1 << 5
+-	hwcap_SHA2     = 1 << 6
+-	hwcap_CRC32    = 1 << 7
+-	hwcap_ATOMICS  = 1 << 8
+-	hwcap_FPHP     = 1 << 9
+-	hwcap_ASIMDHP  = 1 << 10
+-	hwcap_CPUID    = 1 << 11
+-	hwcap_ASIMDRDM = 1 << 12
+-	hwcap_JSCVT    = 1 << 13
+-	hwcap_FCMA     = 1 << 14
+-	hwcap_LRCPC    = 1 << 15
+-	hwcap_DCPOP    = 1 << 16
+-	hwcap_SHA3     = 1 << 17
+-	hwcap_SM3      = 1 << 18
+-	hwcap_SM4      = 1 << 19
+-	hwcap_ASIMDDP  = 1 << 20
+-	hwcap_SHA512   = 1 << 21
+-	hwcap_SVE      = 1 << 22
+-	hwcap_ASIMDFHM = 1 << 23
+-)
+-
+-func doinit() {
+-	// HWCAP feature bits
+-	ARM64.HasFP = isSet(HWCap, hwcap_FP)
+-	ARM64.HasASIMD = isSet(HWCap, hwcap_ASIMD)
+-	ARM64.HasEVTSTRM = isSet(HWCap, hwcap_EVTSTRM)
+-	ARM64.HasAES = isSet(HWCap, hwcap_AES)
+-	ARM64.HasPMULL = isSet(HWCap, hwcap_PMULL)
+-	ARM64.HasSHA1 = isSet(HWCap, hwcap_SHA1)
+-	ARM64.HasSHA2 = isSet(HWCap, hwcap_SHA2)
+-	ARM64.HasCRC32 = isSet(HWCap, hwcap_CRC32)
+-	ARM64.HasATOMICS = isSet(HWCap, hwcap_ATOMICS)
+-	ARM64.HasFPHP = isSet(HWCap, hwcap_FPHP)
+-	ARM64.HasASIMDHP = isSet(HWCap, hwcap_ASIMDHP)
+-	ARM64.HasCPUID = isSet(HWCap, hwcap_CPUID)
+-	ARM64.HasASIMDRDM = isSet(HWCap, hwcap_ASIMDRDM)
+-	ARM64.HasJSCVT = isSet(HWCap, hwcap_JSCVT)
+-	ARM64.HasFCMA = isSet(HWCap, hwcap_FCMA)
+-	ARM64.HasLRCPC = isSet(HWCap, hwcap_LRCPC)
+-	ARM64.HasDCPOP = isSet(HWCap, hwcap_DCPOP)
+-	ARM64.HasSHA3 = isSet(HWCap, hwcap_SHA3)
+-	ARM64.HasSM3 = isSet(HWCap, hwcap_SM3)
+-	ARM64.HasSM4 = isSet(HWCap, hwcap_SM4)
+-	ARM64.HasASIMDDP = isSet(HWCap, hwcap_ASIMDDP)
+-	ARM64.HasSHA512 = isSet(HWCap, hwcap_SHA512)
+-	ARM64.HasSVE = isSet(HWCap, hwcap_SVE)
+-	ARM64.HasASIMDFHM = isSet(HWCap, hwcap_ASIMDFHM)
+-}
+-
+-func isSet(hwc uint, value uint) bool {
+-	return hwc&value != 0
+-}
+diff --git a/containerd/vendor/golang.org/x/sys/cpu/cpu_gc_s390x.go b/containerd/vendor/golang.org/x/sys/cpu/cpu_gc_s390x.go
+new file mode 100644
+index 0000000000..568bcd031a
+--- /dev/null
++++ b/containerd/vendor/golang.org/x/sys/cpu/cpu_gc_s390x.go
+@@ -0,0 +1,21 @@
++// Copyright 2019 The Go Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style
++// license that can be found in the LICENSE file.
++
++// +build !gccgo
++
++package cpu
++
++// haveAsmFunctions reports whether the other functions in this file can
++// be safely called.
++func haveAsmFunctions() bool { return true }
++
++// The following feature detection functions are defined in cpu_s390x.s.
++// They are likely to be expensive to call so the results should be cached.
++func stfle() facilityList
++func kmQuery() queryResult
++func kmcQuery() queryResult
++func kmctrQuery() queryResult
++func kmaQuery() queryResult
++func kimdQuery() queryResult
++func klmdQuery() queryResult
+diff --git a/containerd/vendor/golang.org/x/sys/cpu/cpu_gccgo_s390x.go b/containerd/vendor/golang.org/x/sys/cpu/cpu_gccgo_s390x.go
+new file mode 100644
+index 0000000000..aa986f7782
+--- /dev/null
++++ b/containerd/vendor/golang.org/x/sys/cpu/cpu_gccgo_s390x.go
+@@ -0,0 +1,22 @@
++// Copyright 2019 The Go Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style
++// license that can be found in the LICENSE file.
++
++// +build gccgo
++
++package cpu
++
++// haveAsmFunctions reports whether the other functions in this file can
++// be safely called.
++func haveAsmFunctions() bool { return false }
++
++// TODO(mundaym): the following feature detection functions are currently
++// stubs. See https://golang.org/cl/162887 for how to fix this.
++// They are likely to be expensive to call so the results should be cached.
++func stfle() facilityList     { panic("not implemented for gccgo") }
++func kmQuery() queryResult    { panic("not implemented for gccgo") }
++func kmcQuery() queryResult   { panic("not implemented for gccgo") }
++func kmctrQuery() queryResult { panic("not implemented for gccgo") }
++func kmaQuery() queryResult   { panic("not implemented for gccgo") }
++func kimdQuery() queryResult  { panic("not implemented for gccgo") }
++func klmdQuery() queryResult  { panic("not implemented for gccgo") }
+diff --git a/containerd/vendor/golang.org/x/sys/cpu/cpu_linux.go b/containerd/vendor/golang.org/x/sys/cpu/cpu_linux.go
+index a8452e094b..76b5f507fa 100644
+--- a/containerd/vendor/golang.org/x/sys/cpu/cpu_linux.go
++++ b/containerd/vendor/golang.org/x/sys/cpu/cpu_linux.go
+@@ -7,9 +7,7 @@
+ package cpu
+ 
+ import (
+-	"encoding/binary"
+ 	"io/ioutil"
+-	"runtime"
+ )
+ 
+ const (
+@@ -18,44 +16,44 @@ const (
+ 
+ 	procAuxv = "/proc/self/auxv"
+ 
+-	uintSize uint = 32 << (^uint(0) >> 63)
++	uintSize = int(32 << (^uint(0) >> 63))
+ )
+ 
+ // For those platforms don't have a 'cpuid' equivalent we use HWCAP/HWCAP2
+ // These are initialized in cpu_$GOARCH.go
+ // and should not be changed after they are initialized.
+-var HWCap uint
+-var HWCap2 uint
++var hwCap uint
++var hwCap2 uint
+ 
+ func init() {
+ 	buf, err := ioutil.ReadFile(procAuxv)
+ 	if err != nil {
+-		panic("read proc auxv failed: " + err.Error())
++		// e.g. on android /proc/self/auxv is not accessible, so silently
++		// ignore the error and leave Initialized = false
++		return
+ 	}
+ 
+-	pb := int(uintSize / 8)
+-
+-	for i := 0; i < len(buf)-pb*2; i += pb * 2 {
++	bo := hostByteOrder()
++	for len(buf) >= 2*(uintSize/8) {
+ 		var tag, val uint
+ 		switch uintSize {
+ 		case 32:
+-			tag = uint(binary.LittleEndian.Uint32(buf[i:]))
+-			val = uint(binary.LittleEndian.Uint32(buf[i+pb:]))
++			tag = uint(bo.Uint32(buf[0:]))
++			val = uint(bo.Uint32(buf[4:]))
++			buf = buf[8:]
+ 		case 64:
+-			if runtime.GOARCH == "ppc64" {
+-				tag = uint(binary.BigEndian.Uint64(buf[i:]))
+-				val = uint(binary.BigEndian.Uint64(buf[i+pb:]))
+-			} else {
+-				tag = uint(binary.LittleEndian.Uint64(buf[i:]))
+-				val = uint(binary.LittleEndian.Uint64(buf[i+pb:]))
+-			}
++			tag = uint(bo.Uint64(buf[0:]))
++			val = uint(bo.Uint64(buf[8:]))
++			buf = buf[16:]
+ 		}
+ 		switch tag {
+ 		case _AT_HWCAP:
+-			HWCap = val
++			hwCap = val
+ 		case _AT_HWCAP2:
+-			HWCap2 = val
++			hwCap2 = val
+ 		}
+ 	}
+ 	doinit()
++
++	Initialized = true
+ }
+diff --git a/containerd/vendor/golang.org/x/sys/cpu/cpu_linux_arm64.go b/containerd/vendor/golang.org/x/sys/cpu/cpu_linux_arm64.go
+new file mode 100644
+index 0000000000..fa7fb1bd7b
+--- /dev/null
++++ b/containerd/vendor/golang.org/x/sys/cpu/cpu_linux_arm64.go
+@@ -0,0 +1,67 @@
++// Copyright 2018 The Go Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style
++// license that can be found in the LICENSE file.
++
++package cpu
++
++const cacheLineSize = 64
++
++// HWCAP/HWCAP2 bits. These are exposed by Linux.
++const (
++	hwcap_FP       = 1 << 0
++	hwcap_ASIMD    = 1 << 1
++	hwcap_EVTSTRM  = 1 << 2
++	hwcap_AES      = 1 << 3
++	hwcap_PMULL    = 1 << 4
++	hwcap_SHA1     = 1 << 5
++	hwcap_SHA2     = 1 << 6
++	hwcap_CRC32    = 1 << 7
++	hwcap_ATOMICS  = 1 << 8
++	hwcap_FPHP     = 1 << 9
++	hwcap_ASIMDHP  = 1 << 10
++	hwcap_CPUID    = 1 << 11
++	hwcap_ASIMDRDM = 1 << 12
++	hwcap_JSCVT    = 1 << 13
++	hwcap_FCMA     = 1 << 14
++	hwcap_LRCPC    = 1 << 15
++	hwcap_DCPOP    = 1 << 16
++	hwcap_SHA3     = 1 << 17
++	hwcap_SM3      = 1 << 18
++	hwcap_SM4      = 1 << 19
++	hwcap_ASIMDDP  = 1 << 20
++	hwcap_SHA512   = 1 << 21
++	hwcap_SVE      = 1 << 22
++	hwcap_ASIMDFHM = 1 << 23
++)
++
++func doinit() {
++	// HWCAP feature bits
++	ARM64.HasFP = isSet(hwCap, hwcap_FP)
++	ARM64.HasASIMD = isSet(hwCap, hwcap_ASIMD)
++	ARM64.HasEVTSTRM = isSet(hwCap, hwcap_EVTSTRM)
++	ARM64.HasAES = isSet(hwCap, hwcap_AES)
++	ARM64.HasPMULL = isSet(hwCap, hwcap_PMULL)
++	ARM64.HasSHA1 = isSet(hwCap, hwcap_SHA1)
++	ARM64.HasSHA2 = isSet(hwCap, hwcap_SHA2)
++	ARM64.HasCRC32 = isSet(hwCap, hwcap_CRC32)
++	ARM64.HasATOMICS = isSet(hwCap, hwcap_ATOMICS)
++	ARM64.HasFPHP = isSet(hwCap, hwcap_FPHP)
++	ARM64.HasASIMDHP = isSet(hwCap, hwcap_ASIMDHP)
++	ARM64.HasCPUID = isSet(hwCap, hwcap_CPUID)
++	ARM64.HasASIMDRDM = isSet(hwCap, hwcap_ASIMDRDM)
++	ARM64.HasJSCVT = isSet(hwCap, hwcap_JSCVT)
++	ARM64.HasFCMA = isSet(hwCap, hwcap_FCMA)
++	ARM64.HasLRCPC = isSet(hwCap, hwcap_LRCPC)
++	ARM64.HasDCPOP = isSet(hwCap, hwcap_DCPOP)
++	ARM64.HasSHA3 = isSet(hwCap, hwcap_SHA3)
++	ARM64.HasSM3 = isSet(hwCap, hwcap_SM3)
++	ARM64.HasSM4 = isSet(hwCap, hwcap_SM4)
++	ARM64.HasASIMDDP = isSet(hwCap, hwcap_ASIMDDP)
++	ARM64.HasSHA512 = isSet(hwCap, hwcap_SHA512)
++	ARM64.HasSVE = isSet(hwCap, hwcap_SVE)
++	ARM64.HasASIMDFHM = isSet(hwCap, hwcap_ASIMDFHM)
++}
++
++func isSet(hwc uint, value uint) bool {
++	return hwc&value != 0
++}
+diff --git a/containerd/vendor/golang.org/x/sys/cpu/cpu_ppc64x.go b/containerd/vendor/golang.org/x/sys/cpu/cpu_linux_ppc64x.go
+similarity index 71%
+rename from vendor/golang.org/x/sys/cpu/cpu_ppc64x.go
+rename to vendor/golang.org/x/sys/cpu/cpu_linux_ppc64x.go
+index ed975de621..6c8d975d40 100644
+--- a/containerd/vendor/golang.org/x/sys/cpu/cpu_ppc64x.go
++++ b/containerd/vendor/golang.org/x/sys/cpu/cpu_linux_ppc64x.go
+@@ -2,6 +2,7 @@
+ // Use of this source code is governed by a BSD-style
+ // license that can be found in the LICENSE file.
+ 
++// +build linux
+ // +build ppc64 ppc64le
+ 
+ package cpu
+@@ -21,10 +22,10 @@ const (
+ 
+ func doinit() {
+ 	// HWCAP2 feature bits
+-	PPC64.IsPOWER8 = isSet(HWCap2, _PPC_FEATURE2_ARCH_2_07)
+-	PPC64.IsPOWER9 = isSet(HWCap2, _PPC_FEATURE2_ARCH_3_00)
+-	PPC64.HasDARN = isSet(HWCap2, _PPC_FEATURE2_DARN)
+-	PPC64.HasSCV = isSet(HWCap2, _PPC_FEATURE2_SCV)
++	PPC64.IsPOWER8 = isSet(hwCap2, _PPC_FEATURE2_ARCH_2_07)
++	PPC64.IsPOWER9 = isSet(hwCap2, _PPC_FEATURE2_ARCH_3_00)
++	PPC64.HasDARN = isSet(hwCap2, _PPC_FEATURE2_DARN)
++	PPC64.HasSCV = isSet(hwCap2, _PPC_FEATURE2_SCV)
+ }
+ 
+ func isSet(hwc uint, value uint) bool {
+diff --git a/containerd/vendor/golang.org/x/sys/cpu/cpu_linux_s390x.go b/containerd/vendor/golang.org/x/sys/cpu/cpu_linux_s390x.go
+new file mode 100644
+index 0000000000..d579eaef40
+--- /dev/null
++++ b/containerd/vendor/golang.org/x/sys/cpu/cpu_linux_s390x.go
+@@ -0,0 +1,161 @@
++// Copyright 2019 The Go Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style
++// license that can be found in the LICENSE file.
++
++package cpu
++
++const cacheLineSize = 256
++
++const (
++	// bit mask values from /usr/include/bits/hwcap.h
++	hwcap_ZARCH  = 2
++	hwcap_STFLE  = 4
++	hwcap_MSA    = 8
++	hwcap_LDISP  = 16
++	hwcap_EIMM   = 32
++	hwcap_DFP    = 64
++	hwcap_ETF3EH = 256
++	hwcap_VX     = 2048
++	hwcap_VXE    = 8192
++)
++
++// bitIsSet reports whether the bit at index is set. The bit index
++// is in big endian order, so bit index 0 is the leftmost bit.
++func bitIsSet(bits []uint64, index uint) bool {
++	return bits[index/64]&((1<<63)>>(index%64)) != 0
++}
++
++// function is the code for the named cryptographic function.
++type function uint8
++
++const (
++	// KM{,A,C,CTR} function codes
++	aes128 function = 18 // AES-128
++	aes192 function = 19 // AES-192
++	aes256 function = 20 // AES-256
++
++	// K{I,L}MD function codes
++	sha1     function = 1  // SHA-1
++	sha256   function = 2  // SHA-256
++	sha512   function = 3  // SHA-512
++	sha3_224 function = 32 // SHA3-224
++	sha3_256 function = 33 // SHA3-256
++	sha3_384 function = 34 // SHA3-384
++	sha3_512 function = 35 // SHA3-512
++	shake128 function = 36 // SHAKE-128
++	shake256 function = 37 // SHAKE-256
++
++	// KLMD function codes
++	ghash function = 65 // GHASH
++)
++
++// queryResult contains the result of a Query function
++// call. Bits are numbered in big endian order so the
++// leftmost bit (the MSB) is at index 0.
++type queryResult struct {
++	bits [2]uint64
++}
++
++// Has reports whether the given functions are present.
++func (q *queryResult) Has(fns ...function) bool {
++	if len(fns) == 0 {
++		panic("no function codes provided")
++	}
++	for _, f := range fns {
++		if !bitIsSet(q.bits[:], uint(f)) {
++			return false
++		}
++	}
++	return true
++}
++
++// facility is a bit index for the named facility.
++type facility uint8
++
++const (
++	// cryptography facilities
++	msa4 facility = 77  // message-security-assist extension 4
++	msa8 facility = 146 // message-security-assist extension 8
++)
++
++// facilityList contains the result of an STFLE call.
++// Bits are numbered in big endian order so the
++// leftmost bit (the MSB) is at index 0.
++type facilityList struct {
++	bits [4]uint64
++}
++
++// Has reports whether the given facilities are present.
++func (s *facilityList) Has(fs ...facility) bool {
++	if len(fs) == 0 {
++		panic("no facility bits provided")
++	}
++	for _, f := range fs {
++		if !bitIsSet(s.bits[:], uint(f)) {
++			return false
++		}
++	}
++	return true
++}
++
++func doinit() {
++	// test HWCAP bit vector
++	has := func(featureMask uint) bool {
++		return hwCap&featureMask == featureMask
++	}
++
++	// mandatory
++	S390X.HasZARCH = has(hwcap_ZARCH)
++
++	// optional
++	S390X.HasSTFLE = has(hwcap_STFLE)
++	S390X.HasLDISP = has(hwcap_LDISP)
++	S390X.HasEIMM = has(hwcap_EIMM)
++	S390X.HasETF3EH = has(hwcap_ETF3EH)
++	S390X.HasDFP = has(hwcap_DFP)
++	S390X.HasMSA = has(hwcap_MSA)
++	S390X.HasVX = has(hwcap_VX)
++	if S390X.HasVX {
++		S390X.HasVXE = has(hwcap_VXE)
++	}
++
++	// We need implementations of stfle, km and so on
++	// to detect cryptographic features.
++	if !haveAsmFunctions() {
++		return
++	}
++
++	// optional cryptographic functions
++	if S390X.HasMSA {
++		aes := []function{aes128, aes192, aes256}
++
++		// cipher message
++		km, kmc := kmQuery(), kmcQuery()
++		S390X.HasAES = km.Has(aes...)
++		S390X.HasAESCBC = kmc.Has(aes...)
++		if S390X.HasSTFLE {
++			facilities := stfle()
++			if facilities.Has(msa4) {
++				kmctr := kmctrQuery()
++				S390X.HasAESCTR = kmctr.Has(aes...)
++			}
++			if facilities.Has(msa8) {
++				kma := kmaQuery()
++				S390X.HasAESGCM = kma.Has(aes...)
++			}
++		}
++
++		// compute message digest
++		kimd := kimdQuery() // intermediate (no padding)
++		klmd := klmdQuery() // last (padding)
++		S390X.HasSHA1 = kimd.Has(sha1) && klmd.Has(sha1)
++		S390X.HasSHA256 = kimd.Has(sha256) && klmd.Has(sha256)
++		S390X.HasSHA512 = kimd.Has(sha512) && klmd.Has(sha512)
++		S390X.HasGHASH = kimd.Has(ghash) // KLMD-GHASH does not exist
++		sha3 := []function{
++			sha3_224, sha3_256, sha3_384, sha3_512,
++			shake128, shake256,
++		}
++		S390X.HasSHA3 = kimd.Has(sha3...) && klmd.Has(sha3...)
++	}
++}
+diff --git a/containerd/vendor/golang.org/x/sys/cpu/cpu_s390x.go b/containerd/vendor/golang.org/x/sys/cpu/cpu_other_arm64.go
+similarity index 56%
+rename from vendor/golang.org/x/sys/cpu/cpu_s390x.go
+rename to vendor/golang.org/x/sys/cpu/cpu_other_arm64.go
+index ce8a2289e0..dd1e76dc92 100644
+--- a/containerd/vendor/golang.org/x/sys/cpu/cpu_s390x.go
++++ b/containerd/vendor/golang.org/x/sys/cpu/cpu_other_arm64.go
+@@ -1,9 +1,11 @@
+-// Copyright 2018 The Go Authors. All rights reserved.
++// Copyright 2019 The Go Authors. All rights reserved.
+ // Use of this source code is governed by a BSD-style
+ // license that can be found in the LICENSE file.
+ 
++// +build !linux,arm64
++
+ package cpu
+ 
+-const cacheLineSize = 256
++const cacheLineSize = 64
+ 
+ func doinit() {}
+diff --git a/containerd/vendor/golang.org/x/sys/cpu/cpu_other_ppc64x.go b/containerd/vendor/golang.org/x/sys/cpu/cpu_other_ppc64x.go
+new file mode 100644
+index 0000000000..3053b4b987
+--- /dev/null
++++ b/containerd/vendor/golang.org/x/sys/cpu/cpu_other_ppc64x.go
+@@ -0,0 +1,12 @@
++// Copyright 2019 The Go Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style
++// license that can be found in the LICENSE file.
++
++// +build !linux
++// +build ppc64 ppc64le
++
++package cpu
++
++const cacheLineSize = 128
++
++func doinit() {}
+diff --git a/containerd/vendor/golang.org/x/sys/cpu/cpu_s390x.s b/containerd/vendor/golang.org/x/sys/cpu/cpu_s390x.s
+new file mode 100644
+index 0000000000..e5037d92e0
+--- /dev/null
++++ b/containerd/vendor/golang.org/x/sys/cpu/cpu_s390x.s
+@@ -0,0 +1,57 @@
++// Copyright 2019 The Go Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style
++// license that can be found in the LICENSE file.
++
++// +build !gccgo
++
++#include "textflag.h"
++
++// func stfle() facilityList
++TEXT ·stfle(SB), NOSPLIT|NOFRAME, $0-32
++	MOVD $ret+0(FP), R1
++	MOVD $3, R0          // last doubleword index to store
++	XC   $32, (R1), (R1) // clear 4 doublewords (32 bytes)
++	WORD $0xb2b01000     // store facility list extended (STFLE)
++	RET
++
++// func kmQuery() queryResult
++TEXT ·kmQuery(SB), NOSPLIT|NOFRAME, $0-16
++	MOVD $0, R0         // set function code to 0 (KM-Query)
++	MOVD $ret+0(FP), R1 // address of 16-byte return value
++	WORD $0xB92E0024    // cipher message (KM)
++	RET
++
++// func kmcQuery() queryResult
++TEXT ·kmcQuery(SB), NOSPLIT|NOFRAME, $0-16
++	MOVD $0, R0         // set function code to 0 (KMC-Query)
++	MOVD $ret+0(FP), R1 // address of 16-byte return value
++	WORD $0xB92F0024    // cipher message with chaining (KMC)
++	RET
++
++// func kmctrQuery() queryResult
++TEXT ·kmctrQuery(SB), NOSPLIT|NOFRAME, $0-16
++	MOVD $0, R0         // set function code to 0 (KMCTR-Query)
++	MOVD $ret+0(FP), R1 // address of 16-byte return value
++	WORD $0xB92D4024    // cipher message with counter (KMCTR)
++	RET
++
++// func kmaQuery() queryResult
++TEXT ·kmaQuery(SB), NOSPLIT|NOFRAME, $0-16
++	MOVD $0, R0         // set function code to 0 (KMA-Query)
++	MOVD $ret+0(FP), R1 // address of 16-byte return value
++	WORD $0xb9296024    // cipher message with authentication (KMA)
++	RET
++
++// func kimdQuery() queryResult
++TEXT ·kimdQuery(SB), NOSPLIT|NOFRAME, $0-16
++	MOVD $0, R0         // set function code to 0 (KIMD-Query)
++	MOVD $ret+0(FP), R1 // address of 16-byte return value
++	WORD $0xB93E0024    // compute intermediate message digest (KIMD)
++	RET
++
++// func klmdQuery() queryResult
++TEXT ·klmdQuery(SB), NOSPLIT|NOFRAME, $0-16
++	MOVD $0, R0         // set function code to 0 (KLMD-Query)
++	MOVD $ret+0(FP), R1 // address of 16-byte return value
++	WORD $0xB93F0024    // compute last message digest (KLMD)
++	RET
+diff --git a/containerd/vendor/golang.org/x/sys/cpu/cpu_x86.go b/containerd/vendor/golang.org/x/sys/cpu/cpu_x86.go
+index 2b3ca2e115..d70d317f5a 100644
+--- a/containerd/vendor/golang.org/x/sys/cpu/cpu_x86.go
++++ b/containerd/vendor/golang.org/x/sys/cpu/cpu_x86.go
+@@ -9,6 +9,8 @@ package cpu
+ const cacheLineSize = 64
+ 
+ func init() {
++	Initialized = true
++
+ 	maxID, _, _, _ := cpuid(0, 0)
+ 
+ 	if maxID < 1 {
+diff --git a/containerd/vendor/golang.org/x/sys/unix/README.md b/containerd/vendor/golang.org/x/sys/unix/README.md
+index 2bf415fb1c..eb2f78ae29 100644
+--- a/containerd/vendor/golang.org/x/sys/unix/README.md
++++ b/containerd/vendor/golang.org/x/sys/unix/README.md
+@@ -32,7 +32,7 @@ To build the files for your current OS and architecture, make sure GOOS and
+ GOARCH are set correctly and run `mkall.sh`. This will generate the files for
+ your specific system. Running `mkall.sh -n` shows the commands that will be run.
+ 
+-Requirements: bash, perl, go
++Requirements: bash, go
+ 
+ ### New Build System (currently for `GOOS == "linux"`)
+ 
+@@ -52,14 +52,14 @@ system and have your GOOS and GOARCH set accordingly. Running `mkall.sh` will
+ then generate all of the files for all of the GOOS/GOARCH pairs in the new build
+ system. Running `mkall.sh -n` shows the commands that will be run.
+ 
+-Requirements: bash, perl, go, docker
++Requirements: bash, go, docker
+ 
+ ## Component files
+ 
+ This section describes the various files used in the code generation process.
+ It also contains instructions on how to modify these files to add a new
+ architecture/OS or to add additional syscalls, types, or constants. Note that
+-if you are using the new build system, the scripts cannot be called normally.
++if you are using the new build system, the scripts/programs cannot be called normally.
+ They must be called from within the docker container.
+ 
+ ### asm files
+@@ -81,8 +81,8 @@ each GOOS/GOARCH pair.
+ 
+ ### mksysnum
+ 
+-Mksysnum is a script located at `${GOOS}/mksysnum.pl` (or `mksysnum_${GOOS}.pl`
+-for the old system). This script takes in a list of header files containing the
++Mksysnum is a Go program located at `${GOOS}/mksysnum.go` (or `mksysnum_${GOOS}.go`
++for the old system). This program takes in a list of header files containing the
+ syscall number declarations and parses them to produce the corresponding list of
+ Go numeric constants. See `zsysnum_${GOOS}_${GOARCH}.go` for the generated
+ constants.
+@@ -92,14 +92,14 @@ new installation of the target OS (or updating the source checkouts for the
+ new build system). However, depending on the OS, you make need to update the
+ parsing in mksysnum.
+ 
+-### mksyscall.pl
++### mksyscall.go
+ 
+ The `syscall.go`, `syscall_${GOOS}.go`, `syscall_${GOOS}_${GOARCH}.go` are
+ hand-written Go files which implement system calls (for unix, the specific OS,
+ or the specific OS/Architecture pair respectively) that need special handling
+ and list `//sys` comments giving prototypes for ones that can be generated.
+ 
+-The mksyscall.pl script takes the `//sys` and `//sysnb` comments and converts
++The mksyscall.go program takes the `//sys` and `//sysnb` comments and converts
+ them into syscalls. This requires the name of the prototype in the comment to
+ match a syscall number in the `zsysnum_${GOOS}_${GOARCH}.go` file. The function
+ prototype can be exported (capitalized) or not.
+@@ -160,7 +160,7 @@ signal numbers, and constants. Generated by `mkerrors.sh` (see above).
+ ### `zsyscall_${GOOS}_${GOARCH}.go`
+ 
+ A file containing all the generated syscalls for a specific GOOS and GOARCH.
+-Generated by `mksyscall.pl` (see above).
++Generated by `mksyscall.go` (see above).
+ 
+ ### `zsysnum_${GOOS}_${GOARCH}.go`
+ 
+diff --git a/containerd/vendor/golang.org/x/sys/unix/sockcmsg_unix.go b/containerd/vendor/golang.org/x/sys/unix/sockcmsg_unix.go
+index 5f9ae233a7..26e8b36cfc 100644
+--- a/containerd/vendor/golang.org/x/sys/unix/sockcmsg_unix.go
++++ b/containerd/vendor/golang.org/x/sys/unix/sockcmsg_unix.go
+@@ -25,8 +25,8 @@ func cmsgAlignOf(salen int) int {
+ 		if SizeofPtr == 8 {
+ 			salign = 4
+ 		}
+-	case "openbsd":
+-		// OpenBSD armv7 requires 64-bit alignment.
++	case "netbsd", "openbsd":
++		// NetBSD and OpenBSD armv7 require 64-bit alignment.
+ 		if runtime.GOARCH == "arm" {
+ 			salign = 8
+ 		}
+diff --git a/containerd/vendor/golang.org/x/sys/unix/syscall_darwin.go b/containerd/vendor/golang.org/x/sys/unix/syscall_darwin.go
+index 04042e44b4..a2e3688822 100644
+--- a/containerd/vendor/golang.org/x/sys/unix/syscall_darwin.go
++++ b/containerd/vendor/golang.org/x/sys/unix/syscall_darwin.go
+@@ -416,6 +416,7 @@ func Sendfile(outfd int, infd int, offset *int64, count int) (written int, err e
+ //sys	Chmod(path string, mode uint32) (err error)
+ //sys	Chown(path string, uid int, gid int) (err error)
+ //sys	Chroot(path string) (err error)
++//sys	ClockGettime(clockid int32, time *Timespec) (err error)
+ //sys	Close(fd int) (err error)
+ //sys	Dup(fd int) (nfd int, err error)
+ //sys	Dup2(from int, to int) (err error)
+diff --git a/containerd/vendor/golang.org/x/sys/unix/syscall_linux.go b/containerd/vendor/golang.org/x/sys/unix/syscall_linux.go
+index a07ee49ea3..4bb86aa0fe 100644
+--- a/containerd/vendor/golang.org/x/sys/unix/syscall_linux.go
++++ b/containerd/vendor/golang.org/x/sys/unix/syscall_linux.go
+@@ -994,6 +994,20 @@ func SetsockoptIPMreqn(fd, level, opt int, mreq *IPMreqn) (err error) {
+ 	return setsockopt(fd, level, opt, unsafe.Pointer(mreq), unsafe.Sizeof(*mreq))
+ }
+ 
++// SetsockoptSockFprog attaches a classic BPF or an extended BPF program to a
++// socket to filter incoming packets.  See 'man 7 socket' for usage information.
++func SetsockoptSockFprog(fd, level, opt int, fprog *SockFprog) error {
++	return setsockopt(fd, level, opt, unsafe.Pointer(fprog), unsafe.Sizeof(*fprog))
++}
++
++func SetsockoptCanRawFilter(fd, level, opt int, filter []CanFilter) error {
++	var p unsafe.Pointer
++	if len(filter) > 0 {
++		p = unsafe.Pointer(&filter[0])
++	}
++	return setsockopt(fd, level, opt, p, uintptr(len(filter)*SizeofCanFilter))
++}
++
+ // Keyctl Commands (http://man7.org/linux/man-pages/man2/keyctl.2.html)
+ 
+ // KeyctlInt calls keyctl commands in which each argument is an int.
+diff --git a/containerd/vendor/golang.org/x/sys/unix/syscall_unix.go b/containerd/vendor/golang.org/x/sys/unix/syscall_unix.go
+index 33583a22b6..0f07d29f58 100644
+--- a/containerd/vendor/golang.org/x/sys/unix/syscall_unix.go
++++ b/containerd/vendor/golang.org/x/sys/unix/syscall_unix.go
+@@ -28,6 +28,11 @@ var (
+ 	errENOENT error = syscall.ENOENT
+ )
+ 
++var (
++	signalNameMapOnce sync.Once
++	signalNameMap     map[string]syscall.Signal
++)
++
+ // errnoErr returns common boxed Errno values, to prevent
+ // allocations at runtime.
+ func errnoErr(e syscall.Errno) error {
+@@ -66,6 +71,19 @@ func SignalName(s syscall.Signal) string {
+ 	return ""
+ }
+ 
++// SignalNum returns the syscall.Signal for signal named s,
++// or 0 if a signal with such name is not found.
++// The signal name should start with "SIG".
++func SignalNum(s string) syscall.Signal {
++	signalNameMapOnce.Do(func() {
++		signalNameMap = make(map[string]syscall.Signal)
++		for _, signal := range signalList {
++			signalNameMap[signal.name] = signal.num
++		}
++	})
++	return signalNameMap[s]
++}
++
+ // clen returns the index of the first NULL byte in n or len(n) if n contains no NULL byte.
+ func clen(n []byte) int {
+ 	i := bytes.IndexByte(n, 0)
+diff --git a/containerd/vendor/golang.org/x/sys/unix/zsyscall_darwin_amd64.go b/containerd/vendor/golang.org/x/sys/unix/zsyscall_darwin_amd64.go
+index b50178d679..c142e33e92 100644
+--- a/containerd/vendor/golang.org/x/sys/unix/zsyscall_darwin_amd64.go
++++ b/containerd/vendor/golang.org/x/sys/unix/zsyscall_darwin_amd64.go
+@@ -943,6 +943,21 @@ func libc_chroot_trampoline()
+ 
+ // THIS FILE IS GENERATED BY THE COMMAND AT THE TOP; DO NOT EDIT
+ 
++func ClockGettime(clockid int32, time *Timespec) (err error) {
++	_, _, e1 := syscall_syscall(funcPC(libc_clock_gettime_trampoline), uintptr(clockid), uintptr(unsafe.Pointer(time)), 0)
++	if e1 != 0 {
++		err = errnoErr(e1)
++	}
++	return
++}
++
++func libc_clock_gettime_trampoline()
++
++//go:linkname libc_clock_gettime libc_clock_gettime
++//go:cgo_import_dynamic libc_clock_gettime clock_gettime "/usr/lib/libSystem.B.dylib"
++
++// THIS FILE IS GENERATED BY THE COMMAND AT THE TOP; DO NOT EDIT
++
+ func Close(fd int) (err error) {
+ 	_, _, e1 := syscall_syscall(funcPC(libc_close_trampoline), uintptr(fd), 0, 0)
+ 	if e1 != 0 {
+diff --git a/containerd/vendor/golang.org/x/sys/unix/zsyscall_darwin_amd64.s b/containerd/vendor/golang.org/x/sys/unix/zsyscall_darwin_amd64.s
+index da9b900a8c..1a3915197d 100644
+--- a/containerd/vendor/golang.org/x/sys/unix/zsyscall_darwin_amd64.s
++++ b/containerd/vendor/golang.org/x/sys/unix/zsyscall_darwin_amd64.s
+@@ -108,6 +108,8 @@ TEXT ·libc_chown_trampoline(SB),NOSPLIT,$0-0
+ 	JMP	libc_chown(SB)
+ TEXT ·libc_chroot_trampoline(SB),NOSPLIT,$0-0
+ 	JMP	libc_chroot(SB)
++TEXT ·libc_clock_gettime_trampoline(SB),NOSPLIT,$0-0
++	JMP	libc_clock_gettime(SB)
+ TEXT ·libc_close_trampoline(SB),NOSPLIT,$0-0
+ 	JMP	libc_close(SB)
+ TEXT ·libc_dup_trampoline(SB),NOSPLIT,$0-0
+diff --git a/containerd/vendor/golang.org/x/sys/unix/zsyscall_solaris_amd64.go b/containerd/vendor/golang.org/x/sys/unix/zsyscall_solaris_amd64.go
+index 97b22a499e..5f614760c6 100644
+--- a/containerd/vendor/golang.org/x/sys/unix/zsyscall_solaris_amd64.go
++++ b/containerd/vendor/golang.org/x/sys/unix/zsyscall_solaris_amd64.go
+@@ -1,4 +1,4 @@
+-// mksyscall_solaris.pl -tags solaris,amd64 syscall_solaris.go syscall_solaris_amd64.go
++// go run mksyscall_solaris.go -tags solaris,amd64 syscall_solaris.go syscall_solaris_amd64.go
+ // Code generated by the command above; see README.md. DO NOT EDIT.
+ 
+ // +build solaris,amd64
+diff --git a/containerd/vendor/golang.org/x/sys/unix/zsysnum_darwin_amd64.go b/containerd/vendor/golang.org/x/sys/unix/zsysnum_darwin_amd64.go
+index 9e2837e0e3..654dd3da3b 100644
+--- a/containerd/vendor/golang.org/x/sys/unix/zsysnum_darwin_amd64.go
++++ b/containerd/vendor/golang.org/x/sys/unix/zsysnum_darwin_amd64.go
+@@ -1,4 +1,4 @@
+-// go run mksysnum.go /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.13.sdk/usr/include/sys/syscall.h
++// go run mksysnum.go /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.14.sdk/usr/include/sys/syscall.h
+ // Code generated by the command above; see README.md. DO NOT EDIT.
+ 
+ // +build amd64,darwin
+@@ -431,6 +431,8 @@ const (
+ 	SYS_NTP_ADJTIME                    = 527
+ 	SYS_NTP_GETTIME                    = 528
+ 	SYS_OS_FAULT_WITH_PAYLOAD          = 529
+-	SYS_MAXSYSCALL                     = 530
++	SYS_KQUEUE_WORKLOOP_CTL            = 530
++	SYS___MACH_BRIDGE_REMOTE_TIME      = 531
++	SYS_MAXSYSCALL                     = 532
+ 	SYS_INVALID                        = 63
+ )
+diff --git a/containerd/vendor/golang.org/x/sys/unix/ztypes_linux_386.go b/containerd/vendor/golang.org/x/sys/unix/ztypes_linux_386.go
+index d262150cc0..18724670a8 100644
+--- a/containerd/vendor/golang.org/x/sys/unix/ztypes_linux_386.go
++++ b/containerd/vendor/golang.org/x/sys/unix/ztypes_linux_386.go
+@@ -405,6 +405,11 @@ type TCPInfo struct {
+ 	Total_retrans  uint32
+ }
+ 
++type CanFilter struct {
++	Id   uint32
++	Mask uint32
++}
++
+ const (
+ 	SizeofSockaddrInet4     = 0x10
+ 	SizeofSockaddrInet6     = 0x1c
+@@ -434,6 +439,7 @@ const (
+ 	SizeofICMPv6Filter      = 0x20
+ 	SizeofUcred             = 0xc
+ 	SizeofTCPInfo           = 0x68
++	SizeofCanFilter         = 0x8
+ )
+ 
+ const (
+@@ -569,6 +575,7 @@ const (
+ 	SizeofIfAddrmsg      = 0x8
+ 	SizeofRtMsg          = 0xc
+ 	SizeofRtNexthop      = 0x8
++	SizeofNdUseroptmsg   = 0x10
+ )
+ 
+ type NlMsghdr struct {
+@@ -634,6 +641,17 @@ type RtNexthop struct {
+ 	Ifindex int32
+ }
+ 
++type NdUseroptmsg struct {
++	Family    uint8
++	Pad1      uint8
++	Opts_len  uint16
++	Ifindex   int32
++	Icmp_type uint8
++	Icmp_code uint8
++	Pad2      uint16
++	Pad3      uint32
++}
++
+ const (
+ 	SizeofSockFilter = 0x8
+ 	SizeofSockFprog  = 0x8
+diff --git a/containerd/vendor/golang.org/x/sys/unix/ztypes_linux_amd64.go b/containerd/vendor/golang.org/x/sys/unix/ztypes_linux_amd64.go
+index e492caacda..6ddbf0665c 100644
+--- a/containerd/vendor/golang.org/x/sys/unix/ztypes_linux_amd64.go
++++ b/containerd/vendor/golang.org/x/sys/unix/ztypes_linux_amd64.go
+@@ -406,6 +406,11 @@ type TCPInfo struct {
+ 	Total_retrans  uint32
+ }
+ 
++type CanFilter struct {
++	Id   uint32
++	Mask uint32
++}
++
+ const (
+ 	SizeofSockaddrInet4     = 0x10
+ 	SizeofSockaddrInet6     = 0x1c
+@@ -435,6 +440,7 @@ const (
+ 	SizeofICMPv6Filter      = 0x20
+ 	SizeofUcred             = 0xc
+ 	SizeofTCPInfo           = 0x68
++	SizeofCanFilter         = 0x8
+ )
+ 
+ const (
+@@ -570,6 +576,7 @@ const (
+ 	SizeofIfAddrmsg      = 0x8
+ 	SizeofRtMsg          = 0xc
+ 	SizeofRtNexthop      = 0x8
++	SizeofNdUseroptmsg   = 0x10
+ )
+ 
+ type NlMsghdr struct {
+@@ -635,6 +642,17 @@ type RtNexthop struct {
+ 	Ifindex int32
+ }
+ 
++type NdUseroptmsg struct {
++	Family    uint8
++	Pad1      uint8
++	Opts_len  uint16
++	Ifindex   int32
++	Icmp_type uint8
++	Icmp_code uint8
++	Pad2      uint16
++	Pad3      uint32
++}
++
+ const (
+ 	SizeofSockFilter = 0x8
+ 	SizeofSockFprog  = 0x10
+diff --git a/containerd/vendor/golang.org/x/sys/unix/ztypes_linux_arm.go b/containerd/vendor/golang.org/x/sys/unix/ztypes_linux_arm.go
+index ad4342156e..b8e3ec1384 100644
+--- a/containerd/vendor/golang.org/x/sys/unix/ztypes_linux_arm.go
++++ b/containerd/vendor/golang.org/x/sys/unix/ztypes_linux_arm.go
+@@ -409,6 +409,11 @@ type TCPInfo struct {
+ 	Total_retrans  uint32
+ }
+ 
++type CanFilter struct {
++	Id   uint32
++	Mask uint32
++}
++
+ const (
+ 	SizeofSockaddrInet4     = 0x10
+ 	SizeofSockaddrInet6     = 0x1c
+@@ -438,6 +443,7 @@ const (
+ 	SizeofICMPv6Filter      = 0x20
+ 	SizeofUcred             = 0xc
+ 	SizeofTCPInfo           = 0x68
++	SizeofCanFilter         = 0x8
+ )
+ 
+ const (
+@@ -573,6 +579,7 @@ const (
+ 	SizeofIfAddrmsg      = 0x8
+ 	SizeofRtMsg          = 0xc
+ 	SizeofRtNexthop      = 0x8
++	SizeofNdUseroptmsg   = 0x10
+ )
+ 
+ type NlMsghdr struct {
+@@ -638,6 +645,17 @@ type RtNexthop struct {
+ 	Ifindex int32
+ }
+ 
++type NdUseroptmsg struct {
++	Family    uint8
++	Pad1      uint8
++	Opts_len  uint16
++	Ifindex   int32
++	Icmp_type uint8
++	Icmp_code uint8
++	Pad2      uint16
++	Pad3      uint32
++}
++
+ const (
+ 	SizeofSockFilter = 0x8
+ 	SizeofSockFprog  = 0x8
+diff --git a/containerd/vendor/golang.org/x/sys/unix/ztypes_linux_arm64.go b/containerd/vendor/golang.org/x/sys/unix/ztypes_linux_arm64.go
+index ef76a362d9..2f73f0086d 100644
+--- a/containerd/vendor/golang.org/x/sys/unix/ztypes_linux_arm64.go
++++ b/containerd/vendor/golang.org/x/sys/unix/ztypes_linux_arm64.go
+@@ -407,6 +407,11 @@ type TCPInfo struct {
+ 	Total_retrans  uint32
+ }
+ 
++type CanFilter struct {
++	Id   uint32
++	Mask uint32
++}
++
+ const (
+ 	SizeofSockaddrInet4     = 0x10
+ 	SizeofSockaddrInet6     = 0x1c
+@@ -436,6 +441,7 @@ const (
+ 	SizeofICMPv6Filter      = 0x20
+ 	SizeofUcred             = 0xc
+ 	SizeofTCPInfo           = 0x68
++	SizeofCanFilter         = 0x8
+ )
+ 
+ const (
+@@ -571,6 +577,7 @@ const (
+ 	SizeofIfAddrmsg      = 0x8
+ 	SizeofRtMsg          = 0xc
+ 	SizeofRtNexthop      = 0x8
++	SizeofNdUseroptmsg   = 0x10
+ )
+ 
+ type NlMsghdr struct {
+@@ -636,6 +643,17 @@ type RtNexthop struct {
+ 	Ifindex int32
+ }
+ 
++type NdUseroptmsg struct {
++	Family    uint8
++	Pad1      uint8
++	Opts_len  uint16
++	Ifindex   int32
++	Icmp_type uint8
++	Icmp_code uint8
++	Pad2      uint16
++	Pad3      uint32
++}
++
+ const (
+ 	SizeofSockFilter = 0x8
+ 	SizeofSockFprog  = 0x10
+diff --git a/containerd/vendor/golang.org/x/sys/unix/ztypes_linux_mips.go b/containerd/vendor/golang.org/x/sys/unix/ztypes_linux_mips.go
+index dbf05903d4..4a2a18bcb0 100644
+--- a/containerd/vendor/golang.org/x/sys/unix/ztypes_linux_mips.go
++++ b/containerd/vendor/golang.org/x/sys/unix/ztypes_linux_mips.go
+@@ -408,6 +408,11 @@ type TCPInfo struct {
+ 	Total_retrans  uint32
+ }
+ 
++type CanFilter struct {
++	Id   uint32
++	Mask uint32
++}
++
+ const (
+ 	SizeofSockaddrInet4     = 0x10
+ 	SizeofSockaddrInet6     = 0x1c
+@@ -437,6 +442,7 @@ const (
+ 	SizeofICMPv6Filter      = 0x20
+ 	SizeofUcred             = 0xc
+ 	SizeofTCPInfo           = 0x68
++	SizeofCanFilter         = 0x8
+ )
+ 
+ const (
+@@ -572,6 +578,7 @@ const (
+ 	SizeofIfAddrmsg      = 0x8
+ 	SizeofRtMsg          = 0xc
+ 	SizeofRtNexthop      = 0x8
++	SizeofNdUseroptmsg   = 0x10
+ )
+ 
+ type NlMsghdr struct {
+@@ -637,6 +644,17 @@ type RtNexthop struct {
+ 	Ifindex int32
+ }
+ 
++type NdUseroptmsg struct {
++	Family    uint8
++	Pad1      uint8
++	Opts_len  uint16
++	Ifindex   int32
++	Icmp_type uint8
++	Icmp_code uint8
++	Pad2      uint16
++	Pad3      uint32
++}
++
+ const (
+ 	SizeofSockFilter = 0x8
+ 	SizeofSockFprog  = 0x8
+diff --git a/containerd/vendor/golang.org/x/sys/unix/ztypes_linux_mips64.go b/containerd/vendor/golang.org/x/sys/unix/ztypes_linux_mips64.go
+index 1b7e670793..41e4513de1 100644
+--- a/containerd/vendor/golang.org/x/sys/unix/ztypes_linux_mips64.go
++++ b/containerd/vendor/golang.org/x/sys/unix/ztypes_linux_mips64.go
+@@ -407,6 +407,11 @@ type TCPInfo struct {
+ 	Total_retrans  uint32
+ }
+ 
++type CanFilter struct {
++	Id   uint32
++	Mask uint32
++}
++
+ const (
+ 	SizeofSockaddrInet4     = 0x10
+ 	SizeofSockaddrInet6     = 0x1c
+@@ -436,6 +441,7 @@ const (
+ 	SizeofICMPv6Filter      = 0x20
+ 	SizeofUcred             = 0xc
+ 	SizeofTCPInfo           = 0x68
++	SizeofCanFilter         = 0x8
+ )
+ 
+ const (
+@@ -571,6 +577,7 @@ const (
+ 	SizeofIfAddrmsg      = 0x8
+ 	SizeofRtMsg          = 0xc
+ 	SizeofRtNexthop      = 0x8
++	SizeofNdUseroptmsg   = 0x10
+ )
+ 
+ type NlMsghdr struct {
+@@ -636,6 +643,17 @@ type RtNexthop struct {
+ 	Ifindex int32
+ }
+ 
++type NdUseroptmsg struct {
++	Family    uint8
++	Pad1      uint8
++	Opts_len  uint16
++	Ifindex   int32
++	Icmp_type uint8
++	Icmp_code uint8
++	Pad2      uint16
++	Pad3      uint32
++}
++
+ const (
+ 	SizeofSockFilter = 0x8
+ 	SizeofSockFprog  = 0x10
+diff --git a/containerd/vendor/golang.org/x/sys/unix/ztypes_linux_mips64le.go b/containerd/vendor/golang.org/x/sys/unix/ztypes_linux_mips64le.go
+index 57379005b5..4a3d74b76e 100644
+--- a/containerd/vendor/golang.org/x/sys/unix/ztypes_linux_mips64le.go
++++ b/containerd/vendor/golang.org/x/sys/unix/ztypes_linux_mips64le.go
+@@ -407,6 +407,11 @@ type TCPInfo struct {
+ 	Total_retrans  uint32
+ }
+ 
++type CanFilter struct {
++	Id   uint32
++	Mask uint32
++}
++
+ const (
+ 	SizeofSockaddrInet4     = 0x10
+ 	SizeofSockaddrInet6     = 0x1c
+@@ -436,6 +441,7 @@ const (
+ 	SizeofICMPv6Filter      = 0x20
+ 	SizeofUcred             = 0xc
+ 	SizeofTCPInfo           = 0x68
++	SizeofCanFilter         = 0x8
+ )
+ 
+ const (
+@@ -571,6 +577,7 @@ const (
+ 	SizeofIfAddrmsg      = 0x8
+ 	SizeofRtMsg          = 0xc
+ 	SizeofRtNexthop      = 0x8
++	SizeofNdUseroptmsg   = 0x10
+ )
+ 
+ type NlMsghdr struct {
+@@ -636,6 +643,17 @@ type RtNexthop struct {
+ 	Ifindex int32
+ }
+ 
++type NdUseroptmsg struct {
++	Family    uint8
++	Pad1      uint8
++	Opts_len  uint16
++	Ifindex   int32
++	Icmp_type uint8
++	Icmp_code uint8
++	Pad2      uint16
++	Pad3      uint32
++}
++
+ const (
+ 	SizeofSockFilter = 0x8
+ 	SizeofSockFprog  = 0x10
+diff --git a/containerd/vendor/golang.org/x/sys/unix/ztypes_linux_mipsle.go b/containerd/vendor/golang.org/x/sys/unix/ztypes_linux_mipsle.go
+index 0e88bf47bc..8ae3ca4e4e 100644
+--- a/containerd/vendor/golang.org/x/sys/unix/ztypes_linux_mipsle.go
++++ b/containerd/vendor/golang.org/x/sys/unix/ztypes_linux_mipsle.go
+@@ -408,6 +408,11 @@ type TCPInfo struct {
+ 	Total_retrans  uint32
+ }
+ 
++type CanFilter struct {
++	Id   uint32
++	Mask uint32
++}
++
+ const (
+ 	SizeofSockaddrInet4     = 0x10
+ 	SizeofSockaddrInet6     = 0x1c
+@@ -437,6 +442,7 @@ const (
+ 	SizeofICMPv6Filter      = 0x20
+ 	SizeofUcred             = 0xc
+ 	SizeofTCPInfo           = 0x68
++	SizeofCanFilter         = 0x8
+ )
+ 
+ const (
+@@ -572,6 +578,7 @@ const (
+ 	SizeofIfAddrmsg      = 0x8
+ 	SizeofRtMsg          = 0xc
+ 	SizeofRtNexthop      = 0x8
++	SizeofNdUseroptmsg   = 0x10
+ )
+ 
+ type NlMsghdr struct {
+@@ -637,6 +644,17 @@ type RtNexthop struct {
+ 	Ifindex int32
+ }
+ 
++type NdUseroptmsg struct {
++	Family    uint8
++	Pad1      uint8
++	Opts_len  uint16
++	Ifindex   int32
++	Icmp_type uint8
++	Icmp_code uint8
++	Pad2      uint16
++	Pad3      uint32
++}
++
+ const (
+ 	SizeofSockFilter = 0x8
+ 	SizeofSockFprog  = 0x8
+diff --git a/containerd/vendor/golang.org/x/sys/unix/ztypes_linux_ppc64.go b/containerd/vendor/golang.org/x/sys/unix/ztypes_linux_ppc64.go
+index 5ac91b3f7a..50294c94c0 100644
+--- a/containerd/vendor/golang.org/x/sys/unix/ztypes_linux_ppc64.go
++++ b/containerd/vendor/golang.org/x/sys/unix/ztypes_linux_ppc64.go
+@@ -408,6 +408,11 @@ type TCPInfo struct {
+ 	Total_retrans  uint32
+ }
+ 
++type CanFilter struct {
++	Id   uint32
++	Mask uint32
++}
++
+ const (
+ 	SizeofSockaddrInet4     = 0x10
+ 	SizeofSockaddrInet6     = 0x1c
+@@ -437,6 +442,7 @@ const (
+ 	SizeofICMPv6Filter      = 0x20
+ 	SizeofUcred             = 0xc
+ 	SizeofTCPInfo           = 0x68
++	SizeofCanFilter         = 0x8
+ )
+ 
+ const (
+@@ -572,6 +578,7 @@ const (
+ 	SizeofIfAddrmsg      = 0x8
+ 	SizeofRtMsg          = 0xc
+ 	SizeofRtNexthop      = 0x8
++	SizeofNdUseroptmsg   = 0x10
+ )
+ 
+ type NlMsghdr struct {
+@@ -637,6 +644,17 @@ type RtNexthop struct {
+ 	Ifindex int32
+ }
+ 
++type NdUseroptmsg struct {
++	Family    uint8
++	Pad1      uint8
++	Opts_len  uint16
++	Ifindex   int32
++	Icmp_type uint8
++	Icmp_code uint8
++	Pad2      uint16
++	Pad3      uint32
++}
++
+ const (
+ 	SizeofSockFilter = 0x8
+ 	SizeofSockFprog  = 0x10
+diff --git a/containerd/vendor/golang.org/x/sys/unix/ztypes_linux_ppc64le.go b/containerd/vendor/golang.org/x/sys/unix/ztypes_linux_ppc64le.go
+index 1e59b45068..d2acf3a734 100644
+--- a/containerd/vendor/golang.org/x/sys/unix/ztypes_linux_ppc64le.go
++++ b/containerd/vendor/golang.org/x/sys/unix/ztypes_linux_ppc64le.go
+@@ -408,6 +408,11 @@ type TCPInfo struct {
+ 	Total_retrans  uint32
+ }
+ 
++type CanFilter struct {
++	Id   uint32
++	Mask uint32
++}
++
+ const (
+ 	SizeofSockaddrInet4     = 0x10
+ 	SizeofSockaddrInet6     = 0x1c
+@@ -437,6 +442,7 @@ const (
+ 	SizeofICMPv6Filter      = 0x20
+ 	SizeofUcred             = 0xc
+ 	SizeofTCPInfo           = 0x68
++	SizeofCanFilter         = 0x8
+ )
+ 
+ const (
+@@ -572,6 +578,7 @@ const (
+ 	SizeofIfAddrmsg      = 0x8
+ 	SizeofRtMsg          = 0xc
+ 	SizeofRtNexthop      = 0x8
++	SizeofNdUseroptmsg   = 0x10
+ )
+ 
+ type NlMsghdr struct {
+@@ -637,6 +644,17 @@ type RtNexthop struct {
+ 	Ifindex int32
+ }
+ 
++type NdUseroptmsg struct {
++	Family    uint8
++	Pad1      uint8
++	Opts_len  uint16
++	Ifindex   int32
++	Icmp_type uint8
++	Icmp_code uint8
++	Pad2      uint16
++	Pad3      uint32
++}
++
+ const (
+ 	SizeofSockFilter = 0x8
+ 	SizeofSockFprog  = 0x10
+diff --git a/containerd/vendor/golang.org/x/sys/unix/ztypes_linux_riscv64.go b/containerd/vendor/golang.org/x/sys/unix/ztypes_linux_riscv64.go
+index 508885f11f..675c596880 100644
+--- a/containerd/vendor/golang.org/x/sys/unix/ztypes_linux_riscv64.go
++++ b/containerd/vendor/golang.org/x/sys/unix/ztypes_linux_riscv64.go
+@@ -407,6 +407,11 @@ type TCPInfo struct {
+ 	Total_retrans  uint32
+ }
+ 
++type CanFilter struct {
++	Id   uint32
++	Mask uint32
++}
++
+ const (
+ 	SizeofSockaddrInet4     = 0x10
+ 	SizeofSockaddrInet6     = 0x1c
+@@ -436,6 +441,7 @@ const (
+ 	SizeofICMPv6Filter      = 0x20
+ 	SizeofUcred             = 0xc
+ 	SizeofTCPInfo           = 0x68
++	SizeofCanFilter         = 0x8
+ )
+ 
+ const (
+@@ -571,6 +577,7 @@ const (
+ 	SizeofIfAddrmsg      = 0x8
+ 	SizeofRtMsg          = 0xc
+ 	SizeofRtNexthop      = 0x8
++	SizeofNdUseroptmsg   = 0x10
+ )
+ 
+ type NlMsghdr struct {
+@@ -636,6 +643,17 @@ type RtNexthop struct {
+ 	Ifindex int32
+ }
+ 
++type NdUseroptmsg struct {
++	Family    uint8
++	Pad1      uint8
++	Opts_len  uint16
++	Ifindex   int32
++	Icmp_type uint8
++	Icmp_code uint8
++	Pad2      uint16
++	Pad3      uint32
++}
++
+ const (
+ 	SizeofSockFilter = 0x8
+ 	SizeofSockFprog  = 0x10
+diff --git a/containerd/vendor/golang.org/x/sys/unix/ztypes_linux_s390x.go b/containerd/vendor/golang.org/x/sys/unix/ztypes_linux_s390x.go
+index d315f2c3a7..9f2cf0dfd7 100644
+--- a/containerd/vendor/golang.org/x/sys/unix/ztypes_linux_s390x.go
++++ b/containerd/vendor/golang.org/x/sys/unix/ztypes_linux_s390x.go
+@@ -406,6 +406,11 @@ type TCPInfo struct {
+ 	Total_retrans  uint32
+ }
+ 
++type CanFilter struct {
++	Id   uint32
++	Mask uint32
++}
++
+ const (
+ 	SizeofSockaddrInet4     = 0x10
+ 	SizeofSockaddrInet6     = 0x1c
+@@ -435,6 +440,7 @@ const (
+ 	SizeofICMPv6Filter      = 0x20
+ 	SizeofUcred             = 0xc
+ 	SizeofTCPInfo           = 0x68
++	SizeofCanFilter         = 0x8
+ )
+ 
+ const (
+@@ -570,6 +576,7 @@ const (
+ 	SizeofIfAddrmsg      = 0x8
+ 	SizeofRtMsg          = 0xc
+ 	SizeofRtNexthop      = 0x8
++	SizeofNdUseroptmsg   = 0x10
+ )
+ 
+ type NlMsghdr struct {
+@@ -635,6 +642,17 @@ type RtNexthop struct {
+ 	Ifindex int32
+ }
+ 
++type NdUseroptmsg struct {
++	Family    uint8
++	Pad1      uint8
++	Opts_len  uint16
++	Ifindex   int32
++	Icmp_type uint8
++	Icmp_code uint8
++	Pad2      uint16
++	Pad3      uint32
++}
++
+ const (
+ 	SizeofSockFilter = 0x8
+ 	SizeofSockFprog  = 0x10
+diff --git a/containerd/vendor/golang.org/x/sys/unix/ztypes_linux_sparc64.go b/containerd/vendor/golang.org/x/sys/unix/ztypes_linux_sparc64.go
+index a1a9279c22..68643903c9 100644
+--- a/containerd/vendor/golang.org/x/sys/unix/ztypes_linux_sparc64.go
++++ b/containerd/vendor/golang.org/x/sys/unix/ztypes_linux_sparc64.go
+@@ -410,6 +410,11 @@ type TCPInfo struct {
+ 	Total_retrans  uint32
+ }
+ 
++type CanFilter struct {
++	Id   uint32
++	Mask uint32
++}
++
+ const (
+ 	SizeofSockaddrInet4     = 0x10
+ 	SizeofSockaddrInet6     = 0x1c
+@@ -439,6 +444,7 @@ const (
+ 	SizeofICMPv6Filter      = 0x20
+ 	SizeofUcred             = 0xc
+ 	SizeofTCPInfo           = 0x68
++	SizeofCanFilter         = 0x8
+ )
+ 
+ const (
+@@ -574,6 +580,7 @@ const (
+ 	SizeofIfAddrmsg      = 0x8
+ 	SizeofRtMsg          = 0xc
+ 	SizeofRtNexthop      = 0x8
++	SizeofNdUseroptmsg   = 0x10
+ )
+ 
+ type NlMsghdr struct {
+@@ -639,6 +646,17 @@ type RtNexthop struct {
+ 	Ifindex int32
+ }
+ 
++type NdUseroptmsg struct {
++	Family    uint8
++	Pad1      uint8
++	Opts_len  uint16
++	Ifindex   int32
++	Icmp_type uint8
++	Icmp_code uint8
++	Pad2      uint16
++	Pad3      uint32
++}
++
+ const (
+ 	SizeofSockFilter = 0x8
+ 	SizeofSockFprog  = 0x10
+diff --git a/containerd/vendor/golang.org/x/sys/windows/security_windows.go b/containerd/vendor/golang.org/x/sys/windows/security_windows.go
+index 4f17a3331f..9f946da6fe 100644
+--- a/containerd/vendor/golang.org/x/sys/windows/security_windows.go
++++ b/containerd/vendor/golang.org/x/sys/windows/security_windows.go
+@@ -149,7 +149,7 @@ const (
+ 	DOMAIN_ALIAS_RID_REMOTE_DESKTOP_USERS           = 0x22b
+ 	DOMAIN_ALIAS_RID_NETWORK_CONFIGURATION_OPS      = 0x22c
+ 	DOMAIN_ALIAS_RID_INCOMING_FOREST_TRUST_BUILDERS = 0x22d
+-	DOMAIN_ALIAS_RID_MONITORING_USERS               = 0X22e
++	DOMAIN_ALIAS_RID_MONITORING_USERS               = 0x22e
+ 	DOMAIN_ALIAS_RID_LOGGING_USERS                  = 0x22f
+ 	DOMAIN_ALIAS_RID_AUTHORIZATIONACCESS            = 0x230
+ 	DOMAIN_ALIAS_RID_TS_LICENSE_SERVERS             = 0x231
+diff --git a/containerd/vendor/golang.org/x/sys/windows/svc/service.go b/containerd/vendor/golang.org/x/sys/windows/svc/service.go
+index cda26b54b3..58ad4efd57 100644
+--- a/containerd/vendor/golang.org/x/sys/windows/svc/service.go
++++ b/containerd/vendor/golang.org/x/sys/windows/svc/service.go
+@@ -80,6 +80,7 @@ type ChangeRequest struct {
+ 	EventType     uint32
+ 	EventData     uintptr
+ 	CurrentStatus Status
++	Context       uintptr
+ }
+ 
+ // Handler is the interface that must be implemented to build Windows service.
+@@ -121,12 +122,11 @@ func init() {
+ 	cRegisterServiceCtrlHandlerExW = a.MustFindProc("RegisterServiceCtrlHandlerExW").Addr()
+ }
+ 
+-// The HandlerEx prototype also has a context pointer but since we don't use
+-// it at start-up time we don't have to pass it over either.
+ type ctlEvent struct {
+ 	cmd       Cmd
+ 	eventType uint32
+ 	eventData uintptr
++	context   uintptr
+ 	errno     uint32
+ }
+ 
+@@ -238,13 +238,12 @@ func (s *service) run() {
+ 		exitFromHandler <- exitCode{ss, errno}
+ 	}()
+ 
+-	status := Status{State: Stopped}
+ 	ec := exitCode{isSvcSpecific: true, errno: 0}
++	outcr := ChangeRequest{
++		CurrentStatus: Status{State: Stopped},
++	}
+ 	var outch chan ChangeRequest
+ 	inch := s.c
+-	var cmd Cmd
+-	var evtype uint32
+-	var evdata uintptr
+ loop:
+ 	for {
+ 		select {
+@@ -255,10 +254,11 @@ loop:
+ 			}
+ 			inch = nil
+ 			outch = cmdsToHandler
+-			cmd = r.cmd
+-			evtype = r.eventType
+-			evdata = r.eventData
+-		case outch <- ChangeRequest{cmd, evtype, evdata, status}:
++			outcr.Cmd = r.cmd
++			outcr.EventType = r.eventType
++			outcr.EventData = r.eventData
++			outcr.Context = r.context
++		case outch <- outcr:
+ 			inch = s.c
+ 			outch = nil
+ 		case c := <-changesFromHandler:
+@@ -271,7 +271,7 @@ loop:
+ 				}
+ 				break loop
+ 			}
+-			status = c
++			outcr.CurrentStatus = c
+ 		case ec = <-exitFromHandler:
+ 			break loop
+ 		}
+@@ -315,8 +315,8 @@ func Run(name string, handler Handler) error {
+ 		return err
+ 	}
+ 
+-	ctlHandler := func(ctl uint32, evtype uint32, evdata uintptr, context uintptr) uintptr {
+-		e := ctlEvent{cmd: Cmd(ctl), eventType: evtype, eventData: evdata}
++	ctlHandler := func(ctl, evtype, evdata, context uintptr) uintptr {
++		e := ctlEvent{cmd: Cmd(ctl), eventType: uint32(evtype), eventData: evdata, context: context}
+ 		// We assume that this callback function is running on
+ 		// the same thread as Run. Nowhere in MS documentation
+ 		// I could find statement to guarantee that. So putting
+diff --git a/containerd/vendor/golang.org/x/sys/windows/svc/sys_386.s b/containerd/vendor/golang.org/x/sys/windows/svc/sys_386.s
+index 2c82a9d91d..c8a583d737 100644
+--- a/containerd/vendor/golang.org/x/sys/windows/svc/sys_386.s
++++ b/containerd/vendor/golang.org/x/sys/windows/svc/sys_386.s
+@@ -22,7 +22,8 @@ TEXT ·servicemain(SB),7,$0
+ 	MOVL	AX, (SP)
+ 	MOVL	$·servicectlhandler(SB), AX
+ 	MOVL	AX, 4(SP)
+-	MOVL	$0, 8(SP)
++	// Set context to 123456 to test issue #25660.
++	MOVL	$123456, 8(SP)
+ 	MOVL	·cRegisterServiceCtrlHandlerExW(SB), AX
+ 	MOVL	SP, BP
+ 	CALL	AX
+diff --git a/containerd/vendor/golang.org/x/sys/windows/svc/sys_amd64.s b/containerd/vendor/golang.org/x/sys/windows/svc/sys_amd64.s
+index bde25e9c48..2f7609c5b6 100644
+--- a/containerd/vendor/golang.org/x/sys/windows/svc/sys_amd64.s
++++ b/containerd/vendor/golang.org/x/sys/windows/svc/sys_amd64.s
+@@ -14,6 +14,8 @@ TEXT ·servicemain(SB),7,$0
+ 	MOVQ	·sName(SB), CX
+ 	MOVQ	$·servicectlhandler(SB), DX
+ 	// BUG(pastarmovj): Figure out a way to pass in context in R8.
++	// Set context to 123456 to test issue #25660.
++	MOVQ	$123456, R8
+ 	MOVQ	·cRegisterServiceCtrlHandlerExW(SB), AX
+ 	CALL	AX
+ 	CMPQ	AX, $0
+
+From f0d5dd3c823b9443269420218aa7abd339d43f55 Mon Sep 17 00:00:00 2001
+From: Shengjing Zhu <zhsj@debian.org>
+Date: Sun, 3 Mar 2019 21:25:45 +0800
+Subject: [PATCH 2/2] Use unix.SignalNum in ParseSignal on unix platform
+
+This removes the signalMap on unix platform, since
+the signalMap on different architectures is not same,
+especially it's wrong on mipsx.
+
+golang.org/x/sys/unix now has a SignalNum func to convert
+signal name to a number, thus there's no need to keep
+this redundant map.
+
+Windows platform still needs to have a signalMap, since
+golang.org/x/sys/windows doesn't have corresponding
+functions.
+
+Address: #3061
+
+Signed-off-by: Shengjing Zhu <zhsj@debian.org>
+---
+ signal_map_linux.go                         | 60 ---------------------
+ signal_map_unix.go                          | 58 --------------------
+ signals.go                                  | 24 +--------
+ signals_test.go                             | 47 ++++++++++++++++
+ signals_unix.go                             | 47 ++++++++++++++++
+ signal_map_windows.go => signals_windows.go | 24 +++++++++
+ 6 files changed, 119 insertions(+), 141 deletions(-)
+ delete mode 100644 signal_map_linux.go
+ delete mode 100644 signal_map_unix.go
+ create mode 100644 signals_test.go
+ create mode 100644 signals_unix.go
+ rename signal_map_windows.go => signals_windows.go (66%)
+
+diff --git a/containerd/signal_map_linux.go b/containerd/signal_map_linux.go
+deleted file mode 100644
+index 554011074c..0000000000
+--- a/containerd/signal_map_linux.go
++++ /dev/null
+@@ -1,60 +0,0 @@
+-/*
+-   Copyright The containerd Authors.
+-
+-   Licensed under the Apache License, Version 2.0 (the "License");
+-   you may not use this file except in compliance with the License.
+-   You may obtain a copy of the License at
+-
+-       http://www.apache.org/licenses/LICENSE-2.0
+-
+-   Unless required by applicable law or agreed to in writing, software
+-   distributed under the License is distributed on an "AS IS" BASIS,
+-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+-   See the License for the specific language governing permissions and
+-   limitations under the License.
+-*/
+-
+-package containerd
+-
+-import (
+-	"syscall"
+-
+-	"golang.org/x/sys/unix"
+-)
+-
+-var signalMap = map[string]syscall.Signal{
+-	"ABRT":   unix.SIGABRT,
+-	"ALRM":   unix.SIGALRM,
+-	"BUS":    unix.SIGBUS,
+-	"CHLD":   unix.SIGCHLD,
+-	"CLD":    unix.SIGCLD,
+-	"CONT":   unix.SIGCONT,
+-	"FPE":    unix.SIGFPE,
+-	"HUP":    unix.SIGHUP,
+-	"ILL":    unix.SIGILL,
+-	"INT":    unix.SIGINT,
+-	"IO":     unix.SIGIO,
+-	"IOT":    unix.SIGIOT,
+-	"KILL":   unix.SIGKILL,
+-	"PIPE":   unix.SIGPIPE,
+-	"POLL":   unix.SIGPOLL,
+-	"PROF":   unix.SIGPROF,
+-	"PWR":    unix.SIGPWR,
+-	"QUIT":   unix.SIGQUIT,
+-	"SEGV":   unix.SIGSEGV,
+-	"STKFLT": unix.SIGSTKFLT,
+-	"STOP":   unix.SIGSTOP,
+-	"SYS":    unix.SIGSYS,
+-	"TERM":   unix.SIGTERM,
+-	"TRAP":   unix.SIGTRAP,
+-	"TSTP":   unix.SIGTSTP,
+-	"TTIN":   unix.SIGTTIN,
+-	"TTOU":   unix.SIGTTOU,
+-	"URG":    unix.SIGURG,
+-	"USR1":   unix.SIGUSR1,
+-	"USR2":   unix.SIGUSR2,
+-	"VTALRM": unix.SIGVTALRM,
+-	"WINCH":  unix.SIGWINCH,
+-	"XCPU":   unix.SIGXCPU,
+-	"XFSZ":   unix.SIGXFSZ,
+-}
+diff --git a/containerd/signal_map_unix.go b/containerd/signal_map_unix.go
+deleted file mode 100644
+index 62ccba9ace..0000000000
+--- a/containerd/signal_map_unix.go
++++ /dev/null
+@@ -1,58 +0,0 @@
+-// +build darwin freebsd solaris
+-
+-/*
+-   Copyright The containerd Authors.
+-
+-   Licensed under the Apache License, Version 2.0 (the "License");
+-   you may not use this file except in compliance with the License.
+-   You may obtain a copy of the License at
+-
+-       http://www.apache.org/licenses/LICENSE-2.0
+-
+-   Unless required by applicable law or agreed to in writing, software
+-   distributed under the License is distributed on an "AS IS" BASIS,
+-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+-   See the License for the specific language governing permissions and
+-   limitations under the License.
+-*/
+-
+-package containerd
+-
+-import (
+-	"syscall"
+-
+-	"golang.org/x/sys/unix"
+-)
+-
+-var signalMap = map[string]syscall.Signal{
+-	"ABRT":   unix.SIGABRT,
+-	"ALRM":   unix.SIGALRM,
+-	"BUS":    unix.SIGBUS,
+-	"CHLD":   unix.SIGCHLD,
+-	"CONT":   unix.SIGCONT,
+-	"FPE":    unix.SIGFPE,
+-	"HUP":    unix.SIGHUP,
+-	"ILL":    unix.SIGILL,
+-	"INT":    unix.SIGINT,
+-	"IO":     unix.SIGIO,
+-	"IOT":    unix.SIGIOT,
+-	"KILL":   unix.SIGKILL,
+-	"PIPE":   unix.SIGPIPE,
+-	"PROF":   unix.SIGPROF,
+-	"QUIT":   unix.SIGQUIT,
+-	"SEGV":   unix.SIGSEGV,
+-	"STOP":   unix.SIGSTOP,
+-	"SYS":    unix.SIGSYS,
+-	"TERM":   unix.SIGTERM,
+-	"TRAP":   unix.SIGTRAP,
+-	"TSTP":   unix.SIGTSTP,
+-	"TTIN":   unix.SIGTTIN,
+-	"TTOU":   unix.SIGTTOU,
+-	"URG":    unix.SIGURG,
+-	"USR1":   unix.SIGUSR1,
+-	"USR2":   unix.SIGUSR2,
+-	"VTALRM": unix.SIGVTALRM,
+-	"WINCH":  unix.SIGWINCH,
+-	"XCPU":   unix.SIGXCPU,
+-	"XFSZ":   unix.SIGXFSZ,
+-}
+diff --git a/containerd/signals.go b/containerd/signals.go
+index 32c34309de..ca64ecd021 100644
+--- a/containerd/signals.go
++++ b/containerd/signals.go
+@@ -20,13 +20,11 @@ import (
+ 	"context"
+ 	"encoding/json"
+ 	"fmt"
+-	"strconv"
+-	"strings"
+ 	"syscall"
+ 
+ 	"github.com/containerd/containerd/content"
+ 	"github.com/containerd/containerd/images"
+-	"github.com/opencontainers/image-spec/specs-go/v1"
++	v1 "github.com/opencontainers/image-spec/specs-go/v1"
+ )
+ 
+ // StopSignalLabel is a well-known containerd label for storing the stop
+@@ -83,23 +81,3 @@ func GetOCIStopSignal(ctx context.Context, image Image, defaultSignal string) (s
+ 
+ 	return config.StopSignal, nil
+ }
+-
+-// ParseSignal parses a given string into a syscall.Signal
+-// it checks that the signal exists in the platform-appropriate signalMap
+-func ParseSignal(rawSignal string) (syscall.Signal, error) {
+-	s, err := strconv.Atoi(rawSignal)
+-	if err == nil {
+-		sig := syscall.Signal(s)
+-		for _, msig := range signalMap {
+-			if sig == msig {
+-				return sig, nil
+-			}
+-		}
+-		return -1, fmt.Errorf("unknown signal %q", rawSignal)
+-	}
+-	signal, ok := signalMap[strings.TrimPrefix(strings.ToUpper(rawSignal), "SIG")]
+-	if !ok {
+-		return -1, fmt.Errorf("unknown signal %q", rawSignal)
+-	}
+-	return signal, nil
+-}
+diff --git a/containerd/signals_test.go b/containerd/signals_test.go
+new file mode 100644
+index 0000000000..84296360fa
+--- /dev/null
++++ b/containerd/signals_test.go
+@@ -0,0 +1,47 @@
++/*
++   Copyright The containerd Authors.
++
++   Licensed under the Apache License, Version 2.0 (the "License");
++   you may not use this file except in compliance with the License.
++   You may obtain a copy of the License at
++
++       http://www.apache.org/licenses/LICENSE-2.0
++
++   Unless required by applicable law or agreed to in writing, software
++   distributed under the License is distributed on an "AS IS" BASIS,
++   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++   See the License for the specific language governing permissions and
++   limitations under the License.
++*/
++
++package containerd
++
++import (
++	"fmt"
++	"syscall"
++	"testing"
++)
++
++func TestParseSignal(t *testing.T) {
++	testSignals := []struct {
++		raw  string
++		want syscall.Signal
++		err  bool
++	}{
++		{"1", syscall.Signal(1), false},
++		{"SIGKILL", syscall.SIGKILL, false},
++		{"NONEXIST", 0, true},
++		{"65536", 0, true},
++	}
++	for _, ts := range testSignals {
++		t.Run(fmt.Sprintf("%s/%d/%t", ts.raw, ts.want, ts.err), func(t *testing.T) {
++			got, err := ParseSignal(ts.raw)
++			if ts.err && err == nil {
++				t.Errorf("ParseSignal(%s) should return error", ts.raw)
++			}
++			if !ts.err && got != ts.want {
++				t.Errorf("ParseSignal(%s) return %d, want %d", ts.raw, got, ts.want)
++			}
++		})
++	}
++}
+diff --git a/containerd/signals_unix.go b/containerd/signals_unix.go
+new file mode 100644
+index 0000000000..00aa7ca4b3
+--- /dev/null
++++ b/containerd/signals_unix.go
+@@ -0,0 +1,47 @@
++// +build aix darwin dragonfly freebsd linux netbsd openbsd solaris
++
++/*
++   Copyright The containerd Authors.
++
++   Licensed under the Apache License, Version 2.0 (the "License");
++   you may not use this file except in compliance with the License.
++   You may obtain a copy of the License at
++
++       http://www.apache.org/licenses/LICENSE-2.0
++
++   Unless required by applicable law or agreed to in writing, software
++   distributed under the License is distributed on an "AS IS" BASIS,
++   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++   See the License for the specific language governing permissions and
++   limitations under the License.
++*/
++
++package containerd
++
++import (
++	"fmt"
++	"strconv"
++	"strings"
++	"syscall"
++
++	"golang.org/x/sys/unix"
++)
++
++// ParseSignal parses a given string into a syscall.Signal
++// the rawSignal can be a string with "SIG" prefix,
++// or a signal number in string format.
++func ParseSignal(rawSignal string) (syscall.Signal, error) {
++	s, err := strconv.Atoi(rawSignal)
++	if err == nil {
++		signal := syscall.Signal(s)
++		if unix.SignalName(signal) != "" {
++			return signal, nil
++		}
++		return -1, fmt.Errorf("unknown signal %q", rawSignal)
++	}
++	signal := unix.SignalNum(strings.ToUpper(rawSignal))
++	if signal == 0 {
++		return -1, fmt.Errorf("unknown signal %q", rawSignal)
++	}
++	return signal, nil
++}
+diff --git a/containerd/signal_map_windows.go b/containerd/signals_windows.go
+similarity index 66%
+rename from signal_map_windows.go
+rename to signals_windows.go
+index ef17a8fdb1..0018e191ed 100644
+--- a/containerd/signal_map_windows.go
++++ b/containerd/signals_windows.go
+@@ -17,6 +17,9 @@
+ package containerd
+ 
+ import (
++	"fmt"
++	"strconv"
++	"strings"
+ 	"syscall"
+ 
+ 	"golang.org/x/sys/windows"
+@@ -37,3 +40,24 @@ var signalMap = map[string]syscall.Signal{
+ 	"ALRM":   syscall.Signal(windows.SIGALRM),
+ 	"TERM":   syscall.Signal(windows.SIGTERM),
+ }
++
++// ParseSignal parses a given string into a syscall.Signal
++// the rawSignal can be a string with "SIG" prefix,
++// or a signal number in string format.
++func ParseSignal(rawSignal string) (syscall.Signal, error) {
++	s, err := strconv.Atoi(rawSignal)
++	if err == nil {
++		sig := syscall.Signal(s)
++		for _, msig := range signalMap {
++			if sig == msig {
++				return sig, nil
++			}
++		}
++		return -1, fmt.Errorf("unknown signal %q", rawSignal)
++	}
++	signal, ok := signalMap[strings.TrimPrefix(strings.ToUpper(rawSignal), "SIG")]
++	if !ok {
++		return -1, fmt.Errorf("unknown signal %q", rawSignal)
++	}
++	return signal, nil
++}
