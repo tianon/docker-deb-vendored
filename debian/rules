@@ -19,9 +19,9 @@ export PATH := $(OUR_GOROOT)/bin:$(PATH)
 # same story with SELinux
 export DOCKER_BUILDTAGS := apparmor seccomp selinux
 
-ifneq (,$(filter parallel=%, $(DEB_BUILD_OPTIONS)))
-	NUMJOBS := $(patsubst parallel=%, %, $(filter parallel=%, $(DEB_BUILD_OPTIONS)))
-	MAKEFLAGS += -j '$(NUMJOBS)'
+ifneq (,$(filter parallel=%,$(DEB_BUILD_OPTIONS)))
+	NUMJOBS := $(patsubst parallel=%,%,$(filter parallel=%,$(DEB_BUILD_OPTIONS)))
+	MAKEFLAGS += -j$(NUMJOBS)
 endif
 
 override_dh_gencontrol:
