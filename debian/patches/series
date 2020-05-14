@@ -1,5 +1,5 @@
 docker-prefix.patch
-mips64le/cli-TODO.patch
+mips64le/cli-2507.patch
 mips64le/cli-moby-39646.patch
 mips64le/containerd-3063.patch
 mips64le/containerd-3801.patch

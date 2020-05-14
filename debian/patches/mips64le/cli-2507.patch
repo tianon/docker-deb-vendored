@@ -1,0 +1,33 @@
+From eeafa401549f33c6ac03f85f863406a11b3867ea Mon Sep 17 00:00:00 2001
+From: Xiaodong Liu <liuxiaodong@loongson.cn>
+Date: Tue, 12 May 2020 09:14:36 +0800
+Subject: [PATCH] -buildmode=pie is not supported for the mips arch reference:
+ https://github.com/containerd/containerd/commit/4c99c81326f4026fb8c0b8c5e10542205d99c321
+
+Signed-off-by: Xiaodong Liu <liuxiaodong@loongson.cn>
+---
+ scripts/build/dynbinary | 12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
+
+diff --git a/components/cli/scripts/build/dynbinary b/components/cli/scripts/build/dynbinary
+index 4feb7e71d8..67bc785dae 100755
+--- a/components/cli/scripts/build/dynbinary
++++ b/components/cli/scripts/build/dynbinary
+@@ -9,6 +9,16 @@ source ./scripts/build/.variables
+ 
+ echo "Building dynamically linked $TARGET"
+ export CGO_ENABLED=1
+-go build -o "${TARGET}" -tags pkcs11 --ldflags "${LDFLAGS}" -buildmode=pie "${SOURCE}"
++case "$(go env GOARCH)" in
++        mips*|ppc64)
++                # pie build mode is not supported on mips architectures
++                GO_BUILDMODE=""
++                ;;
++        *)
++                GO_BUILDMODE="-buildmode=pie"
++                ;;
++esac
++
++go build -o "${TARGET}" -tags pkcs11 --ldflags "${LDFLAGS}" ${GO_BUILDMODE} "${SOURCE}"
+ 
+ ln -sf "$(basename "${TARGET}")" build/docker
