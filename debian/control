@@ -27,6 +27,7 @@ Depends: iptables, ${misc:Depends}, ${shlibs:Depends}
 Recommends: ca-certificates,
             cgroupfs-mount | cgroup-lite,
             git,
+            libseccomp2 (>= 2.4.2~),
             pigz,
             xz-utils,
             ${apparmor:Recommends}
